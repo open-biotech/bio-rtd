@@ -1,0 +1,8 @@
+sphinx>=2.4.4
+sphinx_autodoc_typehints>=1.10.3
+sphinx_rtd_theme>=0.4.3
+scipy>=1.4.1
+numpy>=1.18.2
+bokeh>=2.0.0
+xlrd>=1.2.0
+pandas>=1.0.3

@@ -1,0 +1,16 @@
+.idea/
+__pycache__/
+*.pyc
+*.iml
+*.html
+.coverage
+~*
+*~
+htmlcov/
+*.json
+*.css
+*.png
+*.js
+.*
+!/.gitignore
+docs/build
