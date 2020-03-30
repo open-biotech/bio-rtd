@@ -12,19 +12,19 @@ Python 3.7.+
 
 Core dependencies:
 
-- numpy
-- scipy
+    numpy
+    scipy
 
 Packages for visual representation in examples:
 
-- bokeh
-- xlrd
+    bokeh
+    xlrd
 
 Packages for importing data from Excel in examples:
 
-* pandas
+    pandas
 
-## Installation
+## Set up
 
 Download or clone the github repo:
 
@@ -53,7 +53,7 @@ For more information see the [Documentation](https://bio-rtd.readthedocs.io/).
 
 ## Documentation
 
-Documentation can be accessed at https://bio-rtd.readthedocs.io/ or by building a local copy.
+The documentation can be accessed at https://bio-rtd.readthedocs.io/ or by building a local version.
 
 To build a local version of documentation install the following packages:
 
@@ -65,18 +65,6 @@ run command:
 
 and open `docs/build/html/index.html` with a web browser.
 
-## Contributing
-
-1. Create your feature branch (`git checkout -b feature/myFeature`)
-2. Update the code, documentation and tests
-   * Maintain 100 % code coverage in `bio_rtd`
-3. Commit your changes (`git commit -am 'Describe the changes'`)
-4. Push to the branch (`git push origin feature/myFeature`)
-5. Create a new Pull Request
-
-For additional information, see the
-[Documentation - Development](https://bio-rtd.readthedocs.io/en/latest/user_guide/development.html).
-
 
 ## Meta information
 
@@ -84,6 +72,9 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 
 For technical issues, bug reports and feature request use
 [issue tracker](https://github.com/open-biotech/bio-rtd/issues).
+
+If you want to contribute to the code, see
+[Developers guide](https://bio-rtd.readthedocs.io/en/latest/user_guide/development.html).
 
 If you are using the library in your projects please let 
 [us know](mailto:jure.sencar@boku.ac.at).
