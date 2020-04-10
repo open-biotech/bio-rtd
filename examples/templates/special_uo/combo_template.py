@@ -5,7 +5,9 @@ them as a single unit operation.
 
 Logger set in (or to) `ComboUO` is propagated to children.
 
-For more details see docstrings of `ComboUO`.
+See Also
+--------
+:class:`bio_rtd.uo.special_uo.ComboUO`
 
 Notes
 -----
@@ -13,7 +15,7 @@ Notes
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 from typing import List
@@ -41,7 +43,8 @@ tmp_uo = ComboUO(
 
 """Using dict of parameters and attributes.
 
------
+Guide:
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.

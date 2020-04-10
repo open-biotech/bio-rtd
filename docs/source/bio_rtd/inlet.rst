@@ -1,5 +1,6 @@
 bio\_rtd.inlet
 ==============
+.. automodule:: bio_rtd.inlet
 
 ConstantInlet
 -------------

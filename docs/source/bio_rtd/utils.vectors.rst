@@ -1,5 +1,6 @@
 bio\_rtd.utils.vectors
 ======================
+.. automodule:: bio_rtd.utils.vectors
 
 true_start
 ----------

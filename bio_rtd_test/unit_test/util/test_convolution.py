@@ -108,7 +108,7 @@ class TimeConvTest(unittest.TestCase):
         c_out = convolution.time_conv(self.dt, self.c_in, self.rtd, self.pre_fill, logger=self.log)
         np.testing.assert_array_equal(c_out, c_out_target)
 
-    def test_piece_wise_conv_with_init_state(self):
+    def test_piece_wise_time_conv(self):
         # prepare
         f_in = np.ones(self.c_in.shape[1]) * 3.5
         i_f_in_delay = 20
@@ -122,35 +122,35 @@ class TimeConvTest(unittest.TestCase):
 
         # assertions
         with self.assertRaises(AssertionError):
-            convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in[:-2], c_in=self.c_in,
+            convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in[:-2], c_in=self.c_in,
                                                         t_cycle=t_cycle, rt_mean=rt_mean, rtd=self.rtd,
                                                         c_equilibration=None, logger=self.log)
         with self.assertRaises(AssertionError):
-            convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=-1,
+            convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=-1,
                                                         rt_mean=rt_mean, rtd=self.rtd, c_equilibration=None,
                                                         logger=self.log)
         with self.assertRaises(AssertionError):
-            convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=t_cycle,
+            convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=t_cycle,
                                                         rt_mean=-1, rtd=self.rtd, c_equilibration=None,
                                                         logger=self.log)
 
         # empty c_in -> empty c_out
         with self.assertWarns(Warning, msg="Info: Convolution: Got empty c_in"):
-            c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=np.array([]), c_in=np.array([[]]),
+            c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=np.array([]), c_in=np.array([[]]),
                                                                 t_cycle=t_cycle, rt_mean=rt_mean, rtd=self.rtd,
                                                                 c_equilibration=None, logger=self.log)
             self.assertTrue(c_out.size == 0)
 
         # empty bio_rtd in -> c_out == c_in
         with self.assertWarns(Warning, msg="Convolution: Got empty bio_rtd"):
-            c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=t_cycle,
+            c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=self.c_in, t_cycle=t_cycle,
                                                                 rt_mean=rt_mean, rtd=np.array([]), c_equilibration=None,
                                                                 logger=self.log)
             np.testing.assert_array_equal(c_out, self.c_in)
 
         # empty bio_rtd in -> c_out == c_in
         with self.assertWarns(Warning, msg="Info: Convolution: Got empty f_in"):
-            c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in * 0, c_in=self.c_in,
+            c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in * 0, c_in=self.c_in,
                                                                 t_cycle=t_cycle,
                                                                 rt_mean=rt_mean, rtd=self.rtd, c_equilibration=None,
                                                                 logger=self.log)
@@ -159,7 +159,7 @@ class TimeConvTest(unittest.TestCase):
         # prepare inlet profiles
         peak_1 = np.zeros_like(self.c_in)
         peak_1[0, i_f_in_delay:i_f_in_delay + i_cycle] = 1
-        c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=peak_1, t_cycle=t_cycle,
+        c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=peak_1, t_cycle=t_cycle,
                                                             rt_mean=rt_mean, rtd=self.rtd, c_equilibration=None,
                                                             logger=self.log)
         c_out_target = convolution.time_conv(dt=self.dt, c_in=peak_1, rtd=self.rtd, c_equilibration=None,
@@ -176,7 +176,7 @@ class TimeConvTest(unittest.TestCase):
         # same test with init fill
         pre_fill = np.array([[0.12], [3.45], [0]])
         c_out_prev = c_out.copy()
-        c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=peak_1, t_cycle=t_cycle,
+        c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=peak_1, t_cycle=t_cycle,
                                                             rt_mean=rt_mean, rtd=self.rtd, c_equilibration=pre_fill,
                                                             logger=self.log)
         c_out_target = convolution.time_conv(dt=self.dt, c_in=peak_1[:, i_f_in_delay:], rtd=self.rtd,
@@ -218,7 +218,7 @@ class TimeConvTest(unittest.TestCase):
         c_ref[:, i_f_in_stop:] = 0
         c_out_target = convolution.time_conv(dt=self.dt, c_in=c_ref, rtd=self.rtd, logger=self.log)
         # calc
-        c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=peak_2, t_cycle=t_cycle,
+        c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=peak_2, t_cycle=t_cycle,
                                                             rt_mean=rt_mean, rtd=self.rtd, logger=self.log)
         # same as convolution without switching after the outlet for the cycle with material is 'on'
         np.testing.assert_array_almost_equal(
@@ -232,7 +232,7 @@ class TimeConvTest(unittest.TestCase):
         c_ref[:, i_f_in_stop:] = self.wash
         c_out_target = convolution.time_conv(dt=self.dt, c_in=c_ref, rtd=self.rtd, logger=self.log)
         # calc
-        c_out = convolution.piece_wise_conv_with_init_state(dt=self.dt, f_in=f_in, c_in=peak_2, t_cycle=t_cycle,
+        c_out = convolution.piece_wise_time_conv(dt=self.dt, f_in=f_in, c_in=peak_2, t_cycle=t_cycle,
                                                             rt_mean=rt_mean, rtd=self.rtd, c_wash=self.wash,
                                                             logger=self.log)
         # same as convolution without switching after the outlet for the cycle with material is 'on'

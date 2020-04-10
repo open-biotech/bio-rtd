@@ -13,6 +13,7 @@ Templates
    templates/combo_uo
 
    templates/cstr
+   templates/twin_cstr
 
    templates/acc
    templates/pcc

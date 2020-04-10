@@ -5,7 +5,8 @@ from functools import partial
 
 from bokeh.io import curdoc, save
 from warnings import warn
-from bokeh.models.widgets import Div, Button, Slider, RangeSlider, CheckboxGroup, RadioGroup
+from bokeh.models.widgets import Div, Button, Slider, RangeSlider
+from bokeh.models.widgets import CheckboxGroup, RadioGroup
 from bokeh.models.tickers import FixedTicker
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, Range1d, LinearAxis, HoverTool
@@ -46,7 +47,8 @@ class BokehServerGui(UserInterface):
 
     session = None
 
-    line_colors = ['#3288bd', '#11d594', 'red', '#fee08b', '#fc8d59', '#d53e4f']
+    line_colors = ['#3288bd', '#11d594', 'red',
+                   '#fee08b', '#fc8d59', '#d53e4f']
     line_dashes = []
 
     _plot_list = list()
@@ -78,21 +80,25 @@ class BokehServerGui(UserInterface):
             self._build_footer()
 
     def _build_header(self):
-        header_box = Div(text='<p><h1>' + self.rtd_model.title + '</h1>' + self.rtd_model.desc + '</p>',
+        header_box = Div(text='<p><h1>' + self.rtd_model.title + '</h1>'
+                              + self.rtd_model.desc + '</p>',
                          style={'font-size': str(self.font_size_pt) + 'pt'})
         header_box.width = self.width
         curdoc().add_root(header_box)
 
     def _generate_is_hidden_text(self, uo_title):
-        text_box = Div(text='<p style="color:#464646" style="margin-left:50px"><b>'
-                            + uo_title + '   < <it>plot is hidden</it> ></b> </p>',
+        text_box = Div(text=f'<p style="color:#464646"'
+                            f' style="margin-left:50px"><b>'
+                            f'{uo_title} < <it>plot is hidden</it> ></b> '
+                            f'</p>',
                        style={'font-size': str(self.font_size_pt) + 'pt'})
         text_box.width = self.width
         return text_box
 
     def _build_inlet_gui(self):
         controls = self._generate_controls(self.rtd_model.inlet)
-        source_dict, plot = self._generate_plot(self.rtd_model.inlet) if self.plot_version == 1 \
+        source_dict, plot = self._generate_plot(self.rtd_model.inlet) \
+            if self.plot_version == 1 \
             else self._generate_plot_v2(self.rtd_model.inlet)
         self._plot_list.append(plot)
         self._data_source_list.append(source_dict)
@@ -108,7 +114,8 @@ class BokehServerGui(UserInterface):
     def _build_uo_list_gui(self):
         for ui in self.rtd_model.dsp_uo_chain:
             controls = self._generate_controls(ui)
-            source_dict, plot = self._generate_plot(ui) if self.plot_version == 1 \
+            source_dict, plot = self._generate_plot(ui) \
+                if self.plot_version == 1 \
                 else self._generate_plot_v2(ui)
             self._plot_list.append(plot)
             self._data_source_list.append(source_dict)
@@ -127,12 +134,16 @@ class BokehServerGui(UserInterface):
     def _build_footer(self):
         recalculate_btn = Button(label='Recalculate')
         recalculate_btn.on_click(partial(self.recalculate, True))
-        auto_re_calc_cb = CheckboxGroup(labels=['Auto-recalculate'], active=[0])
+        auto_re_calc_cb = CheckboxGroup(labels=['Auto-recalculate'],
+                                        active=[0])
         auto_re_calc_cb.on_click(self.toggle_auto_recalculate)
         auto_re_calc_cb.align = "center"
         rebuild_ui_btn = Button(label='Rebuild ui')
         rebuild_ui_btn.on_click(self.build_ui)
-        curdoc().add_root(row(rebuild_ui_btn, recalculate_btn, auto_re_calc_cb, width=self.controls_width))
+        curdoc().add_root(row(rebuild_ui_btn,
+                              recalculate_btn,
+                              auto_re_calc_cb,
+                              width=self.controls_width))
 
     def toggle_auto_recalculate(self, value):
         self.auto_recalculate = 0 in value
@@ -152,13 +163,16 @@ class BokehServerGui(UserInterface):
         source_i = uo_i + 1
         # update sources
         inlet_source = self._data_source_list[source_i]
-        inlet_source['f'].data = dict(t=self.re_sample(self._t), f=self.re_sample(f))
+        inlet_source['f'].data = dict(t=self.re_sample(self._t),
+                                      f=self.re_sample(f))
         self._plot_list[source_i].y_range.end = f.max()
         for i, s in enumerate(inlet_source['c']):
             if self.plot_first_component_as_sum and i == 0:
-                inlet_source['c'][i].data = dict(t=self.re_sample(self._t), c=self.re_sample(c.sum(0)))
+                inlet_source['c'][i].data = dict(t=self.re_sample(self._t),
+                                                 c=self.re_sample(c.sum(0)))
             else:
-                inlet_source['c'][i].data = dict(t=self.re_sample(self._t), c=self.re_sample(c[i]))
+                inlet_source['c'][i].data = dict(t=self.re_sample(self._t),
+                                                 c=self.re_sample(c[i]))
         # set upper plot limit
         self._plot_list[source_i].y_range.end = c.max() * 1.05
         self._plot_list[source_i].extra_y_ranges['f'].end = f.max() * 1.2
@@ -168,7 +182,8 @@ class BokehServerGui(UserInterface):
         #         self.get_text_from_log(self.rtd_model.dsp_uo_chain[uo_i].log_data)
 
     def _toggle_plot_visibility(self, hide, uo_id):
-        uo_idx_list = [i for i, v in enumerate(self.rtd_model.dsp_uo_chain) if v.uo_id == uo_id][0] + 1
+        uo_idx_list = [i for i, v in enumerate(self.rtd_model.dsp_uo_chain)
+                       if v.uo_id == uo_id][0] + 1
         figure_id = self._plot_list[uo_idx_list].id
         root_id = self._plot_root_dict[figure_id]
         current_row = curdoc().get_model_by_id(root_id)
@@ -195,7 +210,13 @@ class BokehServerGui(UserInterface):
             return setattr(obj, attr, val)
 
     # noinspection PyUnusedLocal
-    def _mutable_parameters_callback(self, uo_id, par_idx, sf, attr_name, old_value, new_values):
+    def _mutable_parameters_callback(self,
+                                     uo_id,
+                                     par_idx,
+                                     sf,
+                                     attr_name,
+                                     old_value,
+                                     new_values):
         if not new_values.__class__ == tuple:
             new_values = [new_values]
         if sf:
@@ -203,55 +224,47 @@ class BokehServerGui(UserInterface):
         if uo_id == self.rtd_model.inlet.uo_id:
             var_list = self.rtd_model.inlet.adj_par_list[par_idx].var_list
             for i in range(new_values.__len__()):
-                self.setattr_with_index(self.rtd_model.inlet, var_list[i], new_values[i])
+                self.setattr_with_index(self.rtd_model.inlet,
+                                        var_list[i],
+                                        new_values[i])
                 if var_list[i] == 'hidden':
                     self._toggle_plot_visibility(new_values[i], uo_id)
                 else:
                     self.start_at = -1
         else:
-            uo_idx_list = [i for i, v in enumerate(self.rtd_model.dsp_uo_chain) if v.uo_id == uo_id]
+            uo_idx_list = \
+                [i for i, v in enumerate(self.rtd_model.dsp_uo_chain)
+                 if v.uo_id == uo_id]
             if len(uo_idx_list) == 0:
-                warn('Parameter could not be changed for ' + uo_id + ' - target missing')
+                warn(f'Parameter could not be changed'
+                     f' for {uo_id} - target missing.')
                 return
             else:
                 uo_idx = uo_idx_list[0]
-            var_list = self.rtd_model.dsp_uo_chain[uo_idx].adj_par_list[par_idx].var_list
+            var_list = self.rtd_model.dsp_uo_chain[uo_idx]\
+                .adj_par_list[par_idx].var_list
             for i in range(new_values.__len__()):
-                self.setattr_with_index(self.rtd_model.dsp_uo_chain[uo_idx], var_list[i], new_values[i])
-                # setattr_with_index(self.dsp_uo_chain[uo_idx], var_list[i], new_values[i])
+                self.setattr_with_index(self.rtd_model.dsp_uo_chain[uo_idx],
+                                        var_list[i],
+                                        new_values[i])
                 if var_list[i] == 'hidden':
                     self._toggle_plot_visibility(new_values[i], uo_id)
                 else:
                     self.rtd_model.dsp_uo_chain[uo_idx].new_config = True
                     self.start_at = min(self.start_at, uo_idx)
-        # recalculate if needed
+        # Recalculate if needed.
         if self.auto_recalculate:
             self.recalculate()
 
     def _mutable_checkbox_callback(self, uo_id, par_idx, n_par, active):
         for i in range(n_par):
-            self._mutable_parameters_callback(uo_id, par_idx, None, [], [], i in active)
+            self._mutable_parameters_callback(uo_id, par_idx, None,
+                                              [], [], i in active)
 
     def _mutable_radio_group_callback(self, uo_id, par_idx, n_par, active):
         for i in range(n_par):
-            self._mutable_parameters_callback(uo_id, par_idx, None, [], [], i == active)
-
-    # @staticmethod
-    # def get_text_from_log(log: dict) -> str:
-    #     s = ""
-    #     for key in log.keys():
-    #         if not hasattr(log[key], '__iter__') or (not isinstance(log[key], dict) and len(log[key]) < 10):
-    #             v = log[key]
-    #             try:
-    #                 v = round(v, -int(np.floor(np.log10(abs(v)))) + 2)
-    #             except TypeError:
-    #                 pass
-    #             except FloatingPointError:
-    #                 pass
-    #             except ValueError:
-    #                 pass
-    #             s += key + ": " + str(v) + "</br>"
-    #     return "Info:</br>" + s if len(s) > 0 else ""
+            self._mutable_parameters_callback(uo_id, par_idx, None,
+                                              [], [], i == active)
 
     @staticmethod
     def getattr_with_index(obj, attr: str):
@@ -274,9 +287,14 @@ class BokehServerGui(UserInterface):
                         initial_value /= r.scale_factor
 
                 slider = Slider(title=r.par_name, value=initial_value,
-                                start=r.v_range[0], end=r.v_range[1], step=r.v_range[2])
+                                start=r.v_range[0], end=r.v_range[1],
+                                step=r.v_range[2])
 
-                slider.on_change('value', partial(self._mutable_parameters_callback, uo.uo_id, i, r.scale_factor))
+                slider.on_change('value',
+                                 partial(self._mutable_parameters_callback,
+                                         uo.uo_id,
+                                         i,
+                                         r.scale_factor))
                 controls.append(slider)
             elif r.gui_type == 'range':
 
@@ -288,20 +306,29 @@ class BokehServerGui(UserInterface):
                         self.getattr_with_index(uo, r.var_list[1])
                     )
                     if r.scale_factor:
-                        initial_value = [v / r.scale_factor for v in initial_value]
+                        initial_value = \
+                            [v / r.scale_factor for v in initial_value]
 
                 slider = RangeSlider(title=r.par_name, value=initial_value,
-                                     start=r.v_range[0], end=r.v_range[1], step=r.v_range[2])
-                slider.on_change('value', partial(self._mutable_parameters_callback, uo.uo_id, i, r.scale_factor))
+                                     start=r.v_range[0], end=r.v_range[1],
+                                     step=r.v_range[2])
+                slider.on_change('value',
+                                 partial(self._mutable_parameters_callback,
+                                         uo.uo_id,
+                                         i,
+                                         r.scale_factor))
                 controls.append(slider)
             elif r.gui_type in ['checkbox', 'radio_group']:
-                attrs = list(r.var_list) if hasattr(r.var_list, '__len__') else [r.var_list]
+                attrs = list(r.var_list) if hasattr(r.var_list, '__len__') \
+                    else [r.var_list]
                 if r.par_name is None:
                     pars = attrs
                 else:
-                    pars = list(r.par_name) if type(r.par_name) is tuple else [r.par_name]
+                    pars = list(r.par_name) if type(r.par_name) is tuple \
+                        else [r.par_name]
 
-                on_list = [i for i in range(len(pars)) if r.v_init[i]] if type(r.v_init) is tuple \
+                on_list = [i for i in range(len(pars)) if r.v_init[i]] \
+                    if type(r.v_init) is tuple \
                     else list(range(len(pars))) if r.v_init is True \
                     else [] if r.v_init is False \
                     else [getattr(uo, attr) for attr in attrs]
@@ -317,27 +344,29 @@ class BokehServerGui(UserInterface):
                                      i,
                                      len(pars)))
                 controls.append(uie)
-        # # append info box
-        # if isinstance(uo, UnitOperation):
-        #     uo.log_box = Div(text=self.get_text_from_log(uo.log_data))
-        #     controls.append(uo.log_box)
         return controls
 
     # noinspection DuplicatedCode
     def _generate_plot(self, uo):
         tmp_t = self.re_sample(self._t)
         tmp_zero = tmp_t.copy() * 0
-        # generate plot
-        plot = figure(plot_height=self.plot_height, plot_width=self.plot_width, title=uo.gui_title,
+        # Generate plot.
+        plot = figure(plot_height=self.plot_height,
+                      plot_width=self.plot_width,
+                      title=uo.gui_title,
                       tools="crosshair,reset,save,wheel_zoom,box_zoom",
-                      x_range=[0, self._t[-1] * self.x_scale_factor], y_range=[0, self.c_y_max], output_backend='svg')
+                      x_range=[0, self._t[-1] * self.x_scale_factor],
+                      y_range=[0, self.c_y_max], output_backend='svg')
         plot.xaxis.axis_label = self.x_label
         plot.yaxis.axis_label = self.y_label_c
         if self.custom_x_ticks is not None:
             plot.xaxis.ticker = self.custom_x_ticks
         plot.hover.mode = 'vline'
         # add extra axis for flow
-        plot.extra_y_ranges = {'f': Range1d(start=0, end=self.rtd_model.inlet.get_result()[0].max() * 1.05)}
+        plot.extra_y_ranges = {
+            'f': Range1d(
+                start=0,
+                end=self.rtd_model.inlet.get_result()[0].max() * 1.05)}
         plot.add_layout(LinearAxis(y_range_name='f'), 'right')
         plot.yaxis[1].axis_label = self.y_label_f
         # generate sources and lines
@@ -348,10 +377,10 @@ class BokehServerGui(UserInterface):
                        line_width=self.line_width,
                        line_alpha=self.line_alpha,
                        line_color=self.line_colors[0],
-                       line_dash=self.line_dashes[0] if len(self.line_dashes) > 0 else 'solid',
+                       line_dash=self.line_dashes[0]
+                       if len(self.line_dashes) > 0 else 'solid',
                        y_range_name='f',
-                       legend_label=self.flow_label
-                       )
+                       legend_label=self.flow_label)
         plot.hover.renderers = [lf]
         source_dict['c'] = list()
         ht_c = HoverTool(tooltips=[('c', '@c{0.2f}')], mode='vline')
@@ -366,8 +395,10 @@ class BokehServerGui(UserInterface):
                            line_width=self.line_width,
                            line_alpha=self.line_alpha,
                            line_color=self.line_colors[1 + i],
-                           line_dash=self.line_dashes[1 + i] if len(self.line_dashes) > 1 + i else 'solid',
-                           legend_label=self.species_label[i] if i < len(self.species_label) else '')
+                           line_dash=self.line_dashes[1 + i]
+                           if len(self.line_dashes) > 1 + i else 'solid',
+                           legend_label=self.species_label[i]
+                           if i < len(self.species_label) else '')
             rs.append(cl)
         ht_c.renderers = rs
         plot.add_tools(ht_c)
@@ -396,16 +427,22 @@ class BokehServerGui(UserInterface):
         tmp_t = self.re_sample(self._t)
         tmp_zero = tmp_t.copy() * 0
         # generate plot
-        plot = figure(plot_height=self.plot_height, plot_width=self.plot_width, title=uo.gui_title,
+        plot = figure(plot_height=self.plot_height,
+                      plot_width=self.plot_width,
+                      title=uo.gui_title,
                       tools="save",
-                      x_range=[0, self._t[-1] * self.x_scale_factor], y_range=[0, self.c_y_max], output_backend='svg')
+                      x_range=[0, self._t[-1] * self.x_scale_factor],
+                      y_range=[0, self.c_y_max], output_backend='svg')
         plot.xaxis.axis_label = self.x_label
         plot.yaxis.axis_label = self.y_label_c
         plot.xaxis.ticker = FixedTicker(ticks=[0])
         plot.yaxis.ticker = FixedTicker(ticks=[0])
         plot.hover.mode = 'vline'
         # add extra axis for flow
-        plot.extra_y_ranges = {'f': Range1d(start=0, end=self.rtd_model.inlet.get_result()[0].max() * 1.05)}
+        plot.extra_y_ranges = {
+            'f': Range1d(
+                start=0,
+                end=self.rtd_model.inlet.get_result()[0].max() * 1.05)}
         plot.add_layout(LinearAxis(y_range_name='f'), 'right')
         plot.yaxis[1].visible = False
         # generate sources and lines
@@ -416,10 +453,10 @@ class BokehServerGui(UserInterface):
                        line_width=self.line_width,
                        line_alpha=self.line_alpha,
                        line_color=self.line_colors[0],
-                       line_dash=self.line_dashes[0] if len(self.line_dashes) > 0 else 'solid',
+                       line_dash=self.line_dashes[0]
+                       if len(self.line_dashes) > 0 else 'solid',
                        y_range_name='f',
-                       legend_label=self.flow_label
-                       )
+                       legend_label=self.flow_label)
         plot.hover.renderers = [lf]
         source_dict['c'] = list()
         for i in range(self.rtd_model.inlet.get_n_species()):
@@ -433,8 +470,10 @@ class BokehServerGui(UserInterface):
                            line_width=self.line_width,
                            line_alpha=self.line_alpha,
                            line_color=self.line_colors[1 + i],
-                           line_dash=self.line_dashes[1 + i] if len(self.line_dashes) > 1 + i else 'solid',
-                           legend_label=self.species_label[i] if i < len(self.species_label) else '')
+                           line_dash=self.line_dashes[1 + i]
+                           if len(self.line_dashes) > 1 + i else 'solid',
+                           legend_label=self.species_label[i]
+                           if i < len(self.species_label) else '')
             rs.append(cl)
         plot.toolbar.logo = None
 

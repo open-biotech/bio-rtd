@@ -1,10 +1,12 @@
-"""Template for instantiating Dilution UnitOperation.
+"""Template for instantiating `Dilution` `UnitOperation`.
 
-For more details see docstrings of `Dilution`.
+See Also
+--------
+:class:`bio_rtd.uo.fc_uo.Dilution`
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 import numpy as np
@@ -25,7 +27,8 @@ tmp_uo.c_add_buffer = np.array([0, 0, 200])
 
 """Using dict of parameters and attributes.
 
------
+Guide:
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.

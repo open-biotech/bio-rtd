@@ -1,7 +1,7 @@
 API Reference
 =============
 
-:class:`bio_rtd.core.Inlet`
+:mod:`bio_rtd.inlet`
 
 .. toctree::
    :maxdepth: 3
@@ -10,7 +10,7 @@ API Reference
 
 ....
 
-:class:`bio_rtd.core.UnitOperation`
+:mod:`bio_rtd.uo`
 
 .. toctree::
    :maxdepth: 2
@@ -34,7 +34,7 @@ API Reference
 
 ....
 
-:class:`bio_rtd.core.PDF`
+:mod:`bio_rtd.pdf`
 
 .. toctree::
    :maxdepth: 3
@@ -43,7 +43,7 @@ API Reference
 
 ....
 
-:class:`bio_rtd.logger.RtdLogger`
+:mod:`bio_rtd.logger`
 
 .. toctree::
    :maxdepth: 3
@@ -52,7 +52,7 @@ API Reference
 
 ....
 
-:class:`bio_rtd.core.ChromatographyLoadBreakthrough`
+:mod:`bio_rtd.chromatography.bt_load`
 
 .. toctree::
    :maxdepth: 3
@@ -60,6 +60,7 @@ API Reference
    bt_load <bio_rtd/chromatography.bt_load>
 
 :mod:`bio_rtd.chromatography.bt_curve`
+
 
 .. toctree::
    :maxdepth: 3
@@ -75,7 +76,6 @@ API Reference
 
    convolution <bio_rtd/utils.convolution>
 
-....
 
 :mod:`bio_rtd.utils.vectors`
 
@@ -86,7 +86,7 @@ API Reference
 
 ....
 
-:class:`bio_rtd.adj_par.AdjustableParameter`
+:mod:`bio_rtd.adj_par`
 
 .. toctree::
    :maxdepth: 3

@@ -1,10 +1,60 @@
-"""Template for PCC and PCCWithWashDesorption unit operations.
+"""Template for `PCC` and `PCCWithWashDesorption` `UnitOperation`.
 
-For more details about process parameters see docstrings of `PCC` and
-`PCCWithWashDesorption`.
+See Also
+--------
+:class:`bio_rtd.uo.sc_uo.PCC`
+:class:`bio_rtd.uo.sc_uo.PCCWithWashDesorption`
+
+Notes
+-----
+Example is for `PCCWithWashDesorption`. Procedure is the same for `PCC`.
+`PCCWithWashDesorption` has some additional parameters that are marked.
+
+"""
+
+__version__ = '0.7.1'
+__author__ = 'Jure Sencar'
+
+import numpy as np
+from typing import List
+
+from bio_rtd.uo.sc_uo import PCCWithWashDesorption
+from bio_rtd.chromatography import bt_load
+from bio_rtd import core, pdf
+
+"""Direct instance creation."""
+
+tmp_t = np.linspace(0, 1000, 10001)
+tmp_dt = tmp_t[1]
+tmp_pcc = PCCWithWashDesorption(
+    t=tmp_t,
+    uo_id="pcc_direct_instance",
+    load_bt=bt_load.ConstantPatternSolution(tmp_dt, dbc_100=240, k=0.05),
+    peak_shape_pdf=pdf.GaussianFixedDispersion(tmp_t, 8 ** 2 / 30),
+    load_recycle_pdf=pdf.GaussianFixedDispersion(tmp_t, 2 * 2 / 30),
+    column_porosity_retentate=0.64,  # protein porosity of the column
+)
+
+tmp_pcc.cv = 13
+tmp_pcc.equilibration_cv = 3
+tmp_pcc.load_c_end_relative_ss = 0.7  # 70 % of breakthrough
+tmp_pcc.load_extend_first_cycle = True
+tmp_pcc.wash_cv = 5
+tmp_pcc.unaccounted_losses_rel = 0.15
+tmp_pcc.elution_cv = 3
+tmp_pcc.elution_f_rel = 1 / 4
+tmp_pcc.elution_peak_position_cv = 1.6
+tmp_pcc.elution_peak_cut_start_cv = 1.05
+tmp_pcc.elution_peak_cut_end_cv = 2.3
+tmp_pcc.regeneration_cv = 1
+tmp_pcc.wash_desorption_tail_half_time_cv = 2
+tmp_pcc.wash_desorption_desorbable_material_share = 0.05
+
+
+"""Using dict of parameters and attributes.
 
 Guide
------
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.
@@ -14,22 +64,7 @@ Guide
 
 See the example below `PARAMETERS` and `ATTRIBUTES`.
 
-Notes
------
-Example is for `PCCWithWashDesorption`. Procedure is the same for `PCC`.
-`PCCWithWashDesorption` has some additional parameters that are marked.
-
 """
-
-__version__ = '0.3.0'
-__author__ = 'Jure Sencar'
-
-import numpy as np
-from typing import List
-
-from bio_rtd.uo.sc_uo import PCCWithWashDesorption
-from bio_rtd.chromatography import bt_load
-from bio_rtd import core, pdf
 
 PARAMETERS = {
     # Required.
@@ -64,7 +99,7 @@ ATTRIBUTES = {
     "load_cv": float,
     "load_c_end_ss": np.ndarray,
     "load_c_end_relative_ss": float,
-    # Optional. Default = False.
+    # Optional. Default = True.
     "load_c_end_estimate_with_iterative_solver": bool,
     # Optional. Default = 1000.
     # Ignored if `load_c_end_estimate_with_iterative_solver == False`.
@@ -276,7 +311,7 @@ uo_attr = {
     "regeneration_f_rel": 1,  # relative to inlet (load) flow rate
 
     # ================ For `PCCWithWashDesorption` only ================
-    "wash_desorption_tail_half_time_cv": 2,
+    "wash_desorption_tail_half_time_cv": 3,
     # One of those two.
     "wash_desorption_desorbable_material_share": 0.05,
     # "wash_desorption_desorbable_above_dbc": float,

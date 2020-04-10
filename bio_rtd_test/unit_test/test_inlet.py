@@ -45,7 +45,7 @@ class TestInlet(unittest.TestCase):
         c_ref = np.ones_like(i._c_out) * i.c[:, np.newaxis]
         self.assertNotEqual(f_ref[0], i._f_out[0])
         self.assertNotEqual(c_ref[0][0], i._c_out[0][0])
-        i._refresh()
+        i.refresh()
         np.testing.assert_array_almost_equal(f_ref, i._f_out)
         np.testing.assert_array_almost_equal(c_ref, i._c_out)
 
@@ -92,7 +92,7 @@ class TestInlet(unittest.TestCase):
         c_ref[:, t < i.t_start] = i.c_outer[:, np.newaxis]
         self.assertNotEqual(f_ref[0], i._f_out[0])
         self.assertNotEqual(c_ref[0][0], i._c_out[0][0])
-        i._refresh()
+        i.refresh()
         np.testing.assert_array_almost_equal(f_ref, i._f_out)
         np.testing.assert_array_almost_equal(c_ref, i._c_out)
 
@@ -119,7 +119,7 @@ class TestInlet(unittest.TestCase):
         np.testing.assert_array_almost_equal(c, i.c)
         np.testing.assert_array_almost_equal(f_old, i._f_out)
         np.testing.assert_array_almost_equal(c_old, i._c_out)
-        i._refresh()
+        i.refresh()
         np.testing.assert_array_almost_equal(f, i._f_out)
         np.testing.assert_array_almost_equal(c, i._c_out)
 

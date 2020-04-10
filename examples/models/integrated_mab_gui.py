@@ -9,9 +9,6 @@ For more information see docstrings of both classes.
 
 import numpy as np
 
-from bokeh.client import push_session
-from bokeh.io import curdoc
-
 from bio_rtd import adj_par
 from examples.models.integrated_mab import rtd_model
 
@@ -50,7 +47,7 @@ rtd_model.dsp_uo_chain[2].adj_par_list = [
 ]
 # Set CSTR value definition to absolute.
 rtd_model.dsp_uo_chain[2].v_void = 50
-rtd_model.dsp_uo_chain[2].v_min_rel = -1
+rtd_model.dsp_uo_chain[2].v_min_ratio = -1
 # AEX column size
 rtd_model.dsp_uo_chain[4].adj_par_list = [
     adj_par.AdjParSlider(

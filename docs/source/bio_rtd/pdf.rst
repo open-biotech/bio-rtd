@@ -1,5 +1,6 @@
 bio\_rtd.pdf
 ============
+.. automodule:: bio_rtd.pdf
 
 GaussianFixedDispersion
 -----------------------

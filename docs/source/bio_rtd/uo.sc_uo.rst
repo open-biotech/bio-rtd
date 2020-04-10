@@ -1,5 +1,6 @@
 bio\_rtd.uo.sc\_uo
 ===================
+.. automodule:: bio_rtd.uo.sc_uo
 
 ACC
 ---

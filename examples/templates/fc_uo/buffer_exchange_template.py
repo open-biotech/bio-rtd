@@ -1,10 +1,12 @@
-"""Template for instantiating BufferExchange UnitOperation.
+"""Template for instantiating `BufferExchange` `UnitOperation`.
 
-For more details see docstrings of `BufferExchange`.
+See Also
+--------
+:class:`bio_rtd.uo.fc_uo.BufferExchange`
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 from typing import List
@@ -31,7 +33,8 @@ tmp_uo.c_add_buffer = np.array([0, 0, 200])
 
 """Using dict of parameters and attributes.
 
------
+Guide:
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.
