@@ -26,11 +26,15 @@ Packages for importing data from Excel in examples:
 
 ## Set up
 
-Download or clone the github repo:
+Using package manager:
+
+    pip install bio_rtd
+
+To run examples, download or clone the github repo:
 
     git clone https://github.com/open-biotech/bio-rtd.git
 
-Set local destination (`/path_to/bio-rtd`) as working directory
+and set local destination (`/path_to/bio-rtd`) as a working directory
 or add it to the python path.
 
 
