@@ -1,4 +1,4 @@
-"""Semi continuous unit operations.
+"""Fully continuous unit operations.
 
 Unit operations that accept and provide
 constant or box-shaped flow rate profile.
@@ -10,7 +10,7 @@ optional trailing zeros at front or at end.
 
 __all__ = ['Dilution', 'Concentration', 'BufferExchange',
            'FlowThrough', 'FlowThroughWithSwitching']
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 __author__ = 'Jure Sencar'
 
 import typing as _typing
@@ -76,8 +76,9 @@ class Dilution(_core.UnitOperation):
                 self.c_add_buffer.reshape(self._n_species, 1)
 
     def _calculate(self):
-        assert self.dilution_ratio >= 1
+        self._calc_c_add_buffer()
         assert hasattr(self, "_c_add_buffer")
+        assert self.dilution_ratio >= 1
         if self.dilution_ratio == 1:
             self.log.w("Dilution ratio is set to 1.")
         # Apply dilution.
