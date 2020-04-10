@@ -1,5 +1,5 @@
 # bio-rtd library
-bio-rtd library is a python library for modeling
+**bio-rtd** library is a python library for modeling
 residence time distributions (RTD)
 of integrated continuous biomanufacturing processes.
 
