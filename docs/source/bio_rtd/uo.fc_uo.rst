@@ -1,5 +1,6 @@
 bio\_rtd.uo.fc\_uo
 ==================
+.. automodule:: bio_rtd.uo.fc_uo
 
 Dilution
 --------

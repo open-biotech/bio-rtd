@@ -1,10 +1,12 @@
-"""Template for instantiating Concentration UnitOperation.
+"""Template for instantiating `Concentration` `UnitOperation`.
 
-For more details see docstrings of `Concentration`.
+See Also
+--------
+:class:`bio_rtd.uo.fc_uo.Concentration`
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 from typing import List
@@ -29,7 +31,8 @@ tmp_uo.relative_losses = 0.05  # 5 % losses
 
 """Using dict of parameters and attributes.
 
------
+Guide:
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.

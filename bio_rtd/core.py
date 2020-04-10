@@ -4,7 +4,7 @@ __all__ = ['Inlet', 'UnitOperation',
            'RtdModel', 'UserInterface',
            'PDF', 'ChromatographyLoadBreakthrough',
            'ParameterSetList']
-__version__ = '0.7'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 import typing as _typing
@@ -22,14 +22,19 @@ class DefaultLoggerLogic(_ABC):
     # noinspection PyProtectedMember
     """Default binding of the `RtdLogger` to a class.
 
-    The class holds a reference to a `RtdLogger` logger instance
-    and plants a data tree in the logger.
+    The class holds a reference to a :class:`bio_rtd.logger.RtdLogger`
+    instance. When the class receives the instance, it plants a data
+    tree into it. If the class is asked to provide the instance before
+    it received one, then an instance of
+    :class:`bio_rtd.logger.DefaultLogger` is created and passed on.
 
     Parameters
     ----------
     logger_parent_id
         Custom unique id that belongs to the instance of the class.
-        It is used to plant a data tree in the `RtdLogger`.
+
+        The data tree of this instance is stored in
+        :class:`bio_rtd.logger.RtdLogger` under the `logger_parent_id`.
 
     Examples
     --------
@@ -37,12 +42,15 @@ class DefaultLoggerLogic(_ABC):
     >>> l = DefaultLoggerLogic(logger_parent_id)
     >>> isinstance(l.log, _logger.DefaultLogger)
     True
-    >>> l.log.e("Error Description")  # log error
+    >>> # Log error: DefaultLogger raises RuntimeError.
+    >>> l.log.e("Error Description")
     Traceback (most recent call last):
     RuntimeError: Error Description
-    >>> l.log.w("Warning Description")  # log waring
+    >>> # Log waring: DefaultLogger prints it.
+    >>> l.log.w("Warning Description")
     Warning Description
-    >>> l.log.i("Info")  # log info
+    >>> # Log info: DefaultLogger ignores it.
+    >>> l.log.i("Info")
     >>> l.log.log_data = True
     >>> l.log.log_level = _logger.RtdLogger.DEBUG
     >>> l.log.i_data(l._log_tree, "a", 3)  # store value in logger
@@ -50,27 +58,31 @@ class DefaultLoggerLogic(_ABC):
     >>> l.log.get_data_tree(logger_parent_id)["b"]
     7
     >>> l.log = _logger.StrictLogger()
+    >>> # Log waring: StrictLogger raises RuntimeError.
     >>> l.log.w("Warning Info")
     Traceback (most recent call last):
     RuntimeError: Warning Info
 
-    Notes
-    -----
-    See the documentation of the `RtdLogger`.
+    See Also
+    --------
+    :class:`bio_rtd.logger.DefaultLogger`
 
     """
 
     def __init__(self, logger_parent_id: str):
         self._instance_id = logger_parent_id
+        self._log_entity_id = logger_parent_id
         self._logger: _typing.Union[_logger.RtdLogger, None] = None
         self._log_tree = dict()  # place to store logged data
 
     @property
     def log(self) -> _logger.RtdLogger:
-        """Logger.
+        """Reference of the `RtdLogger` instance.
 
-        If logger is not set, then a `DefaultLogger` is instantiated.
-        Setter also plants a data tree into passed logger.
+        Setter also plants instance data tree into passed logger.
+
+        If logger is requested, but not yet set, then a
+        :class:`bio_rtd.logger.DefaultLogger` is instantiated.
 
         """
         if self._logger is None:
@@ -80,18 +92,22 @@ class DefaultLoggerLogic(_ABC):
     @log.setter
     def log(self, logger: _logger.RtdLogger):
         self._logger = logger
-        self._logger.set_data_tree(self._instance_id, self._log_tree)
+        self._logger.set_data_tree(self._log_entity_id, self._log_tree)
 
-    def set_logger_from_parent(self, parent_id: str, logger: _logger.RtdLogger):
+    def set_logger_from_parent(self, parent_id: str,
+                               logger: _logger.RtdLogger):
         """Inherit logger from parent.
 
         Parameters
         ----------
         parent_id
+            Unique identifier of parent instance.
         logger
+            Logger from parent instance.
         """
         self._logger = logger
-        self._logger.set_data_tree(f"{parent_id}/{self._instance_id}",
+        self._log_entity_id = f"{parent_id}/{self._instance_id}"
+        self._logger.set_data_tree(self._log_entity_id,
                                    self._log_tree)
 
 
@@ -101,8 +117,7 @@ class Inlet(DefaultLoggerLogic, _ABC):
     Parameters
     ----------
     t
-        Simulation time vector
-
+        Simulation time vector.
         Starts with 0 and has a constant time step.
     species_list
         List with names of simulating process fluid species.
@@ -110,17 +125,6 @@ class Inlet(DefaultLoggerLogic, _ABC):
         Unique identifier of an instance. It is stored in :attr:`uo_id`.
     gui_title
         Readable title of an instance.
-
-    Attributes
-    ----------
-    species_list : list of str
-        List with names of simulating process fluid species.
-    uo_id : str
-        Unique identifier of the :class:`Inlet` instance.
-    gui_title : str
-        Readable title of the :class:`Inlet` instance.
-    adj_par_list : list of :class:`bio_rtd.adj_par.AdjustableParameter`
-        List of adjustable parameters exposed to the GUI.
 
     """
 
@@ -137,24 +141,40 @@ class Inlet(DefaultLoggerLogic, _ABC):
             "t should have a fixed step size"
         
         # Species
-        self.species_list = species_list
+        self.species_list: _typing.Sequence[str] = species_list
+        """List with names of simulating process fluid species."""
         self._n_species = len(self.species_list)
         
         # Strings
         self.uo_id: str = inlet_id
-        self.gui_title = gui_title
+        """Unique identifier of the instance."""
+        self.gui_title: str = gui_title
+        """Human readable title (for plots)."""
         
         # Placeholders
-        self.place_inlet_before_uo_id: _typing.Optional[str] = None
         self.adj_par_list: _typing.Sequence[_adj_par.AdjustableParameter] = ()
+        """List of adjustable parameters exposed to the GUI."""
         
         # Outputs
         self._f_out = _np.zeros_like(t)
         self._c_out = _np.zeros([self._n_species, t.size])
 
+    def get_t(self) -> _np.ndarray:
+        """Get simulation time vector."""
+        return self._t
+
+    def get_n_species(self) -> int:
+        """Get number of process fluid species."""
+        return self._n_species
+
     @_abstractmethod
-    def _refresh(self):  # pragma: no cover
-        """Re-calculates `self._f_out` and `self._c_out`."""
+    def refresh(self):  # pragma: no cover
+        """Updates output profiles.
+
+        Internally it updates `self._f_out` and `self._c_out` based on
+        instance attribute values.
+
+        """
         pass
 
     def get_result(self) -> _typing.Tuple[_np.ndarray, _np.ndarray]:
@@ -169,14 +189,6 @@ class Inlet(DefaultLoggerLogic, _ABC):
         """
         return self._f_out, self._c_out
 
-    def get_t(self) -> _np.ndarray:
-        """Get simulation time vector."""
-        return self._t
-
-    def get_n_species(self) -> int:
-        """Get number of process fluid species."""
-        return self._n_species
-
 
 class UnitOperation(DefaultLoggerLogic, _ABC):
     """Processes flow rate and concentration profiles.
@@ -184,37 +196,12 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
     Parameters
     ----------
     t
-        Global simulation time vector.
-        It must starts with 0 and have a constant time step.
+        Simulation time vector.
+        Starts with 0 and has a constant time step.
     uo_id
         Unique identifier.
     gui_title
         Readable title for GUI.
-
-    Attributes
-    ----------
-    adj_par_list
-        List of adjustable parameters exposed to the GUI.
-    gui_hidden
-        Hide the of the unit operation (default False).
-    discard_inlet_until_t
-        Discard inlet until given time.
-    discard_inlet_until_min_c
-        Discard inlet until given concentration is reached.
-    discard_inlet_until_min_c_rel
-        Discard inlet until given concentration relative to is reached.
-        Specified concentration is relative to the max concentration.
-    discard_inlet_n_cycles
-        Discard first n cycles of the periodic inlet flow rate profile.
-    discard_outlet_until_t
-        Discard outlet until given time.
-    discard_outlet_until_min_c
-        Discard outlet until given concentration is reached.
-    discard_outlet_until_min_c_rel
-        Discard outlet until given concentration relative to is reached.
-        Specified concentration is relative to the max concentration.
-    discard_outlet_n_cycles
-        Discard first n cycles of the periodic outlet flow rate profile.
 
     """
 
@@ -225,25 +212,45 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
         self._t = t
         self._dt = t[-1] / (t.size - 1)  # time step
         # id and title
-        self.uo_id = uo_id
-        self.gui_title = gui_title
+        self.uo_id: str = uo_id
+        """Unique identifier of the instance"""
+        self.gui_title: str = gui_title
+        """Readable title for GUI"""
 
-        # hide unit operation from plots
-        self.gui_hidden = False
         # adjustable parameter list
-        self.adj_par_list: _typing.Sequence[_adj_par.AdjustableParameter] = ()
-        """Settings"""
+        self.adj_par_list = []
+        """list of :class:`bio_rtd.adj_par.AdjustableParameter`: List
+        of adjustable parameters exposed to the GUI."""
+        # hide unit operation from plots
+        self.gui_hidden: bool = False
+        """Hide the of the unit operation (default False)."""
 
         # start-up phase (optional initial delay)
-        self.discard_inlet_until_t = -1
+        self.discard_inlet_until_t: float = -1
+        """Discard inlet until given time."""
         self.discard_inlet_until_min_c: _np.ndarray = _np.array([])
+        """Discard inlet until given concentration is reached."""
         self.discard_inlet_until_min_c_rel: _np.ndarray = _np.array([])
-        self.discard_inlet_n_cycles = -1
+        """Discard inlet until given concentration relative to is reached.
+        
+        Specified concentration is relative to the max concentration.
+        
+        """
+        self.discard_inlet_n_cycles: int = -1
+        """Discard first n cycles of the periodic inlet flow rate profile."""
         # shout-down phase (optional early stop)
-        self.discard_outlet_until_t = -1
+        self.discard_outlet_until_t: float = -1
+        """Discard outlet until given time."""
         self.discard_outlet_until_min_c: _np.ndarray = _np.array([])
+        """Discard outlet until given concentration is reached."""
         self.discard_outlet_until_min_c_rel: _np.ndarray = _np.array([])
-        self.discard_outlet_n_cycles = -1
+        """Discard outlet until given concentration relative to is reached.
+        
+        Specified concentration is relative to the max concentration.
+        
+        """
+        self.discard_outlet_n_cycles: int = -1
+        """Discard first n cycles of the periodic outlet flow rate profile."""
 
         # placeholders, populated during simulation
         self._c: _np.ndarray = _np.array([])  # concentration profiles
@@ -294,7 +301,7 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
         Returns
         -------
-        i_interval_start : Sequence[int]
+        i_interval_start
             Indexes of time points at which the flow rate turns on.
             Each index corresponds to a leading non-zero value.
 
@@ -306,16 +313,18 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
             "flow rate must have a constant 'on' value"
         return list(_np.argwhere(_np.diff(self._f, prepend=0) > 0).flatten())
 
-    def _assert_periodic_flow(self) -> (_typing.Sequence[int], int, float):
+    def _assert_periodic_flow(self) -> _typing.Tuple[_typing.Sequence[int],
+                                                     float,
+                                                     float]:
         """Assert and provides info about periodic flow rate.
 
         Only last period is allowed to be shorter than others.
 
         Returns
         -------
-        i_flow_start_list : Sequence[int]
+        i_flow_start_list
             Indexes of time-points at which the flow rate gets turned on
-        i_flow_on_duration : int
+        i_flow_on_average
             Number of time-points of flow 'on' interval.
         t_cycle_duration
             Duration of average cycle ('on' + 'off' interval)
@@ -334,8 +343,10 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
         ) <= 1), "Periodic flow rate must have fixed cycle duration"
 
         # Assert periods.
-        i_flow_on_duration = \
+        i_flow_on_first = \
             _utils.vectors.true_start(self._f[i_flow_start_list[0]:] == 0)
+        i_flow_on_total = 0.0
+        n_cycles = 0
         on_mask = _np.zeros_like(self._f, dtype=bool)
         for i in range(len(i_flow_start_list)):
             # Get next stop.
@@ -347,19 +358,23 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
                 i_cycle_flow_on_duration = _utils.vectors.true_start(
                     self._f[i_flow_start_list[i]:] == 0
                 )
+                i_flow_on_total += i_cycle_flow_on_duration
+                n_cycles += 1
             i_flow_off = i_flow_start_list[i] + i_cycle_flow_on_duration
             on_mask[i_flow_start_list[i]:i_flow_off] = True
             if i + 1 == len(i_flow_start_list):
                 # allow last cycle to be clipped
-                assert i_cycle_flow_on_duration - i_flow_on_duration <= 1
+                assert i_cycle_flow_on_duration - i_flow_on_first <= 1
             else:
                 # allow to be 1 time step off the first cycle
-                assert abs(i_cycle_flow_on_duration - i_flow_on_duration) <= 1
+                assert abs(i_cycle_flow_on_duration - i_flow_on_first) <= 1
         # Flow can be either off or on at the constant value.
         assert _np.all(self._f[on_mask] == self._f.max())
         assert _np.all(self._f[~on_mask] == 0)
 
-        return i_flow_start_list, i_flow_on_duration, t_cycle_duration
+        i_flow_on_average = i_flow_on_total / n_cycles
+
+        return i_flow_start_list, i_flow_on_average, t_cycle_duration
 
     def _estimate_steady_state_mean_f(self) -> (float, float):
         """Estimate mean flow rate in a period of periodic flow rate.
@@ -402,17 +417,14 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
         Parameters
         ----------
-        species : list of int
+        species
             List of indexes of relevant species. (indexes start with 0).
             If not specified, all species are selected.
 
         Returns
         -------
-        (float, float)
-            f_mean
-                Mean flow rate in one cycle.
-            t_cycle_duration
-                Duration of a cycle ('on' + 'off' interval).
+        c_mean_ss: ndarray
+            Estimated steady-state mean concentration.
 
         """
         if species is None:
@@ -452,9 +464,10 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
             m_max = 0
             c_max = _np.zeros([len(species), 1])
             for i, i_st in enumerate(i_flow_on_start_list):
-                if i_st + i_flow_on_duration >= self._t.size:
+                i_flow_on_duration_int = int(round(i_flow_on_duration))
+                if i_st + i_flow_on_duration_int >= self._t.size:
                     continue
-                _c_max = self._c[species, i_st:i_st + i_flow_on_duration] \
+                _c_max = self._c[species, i_st:i_st + i_flow_on_duration_int] \
                     .mean(1)
                 if _c_max.sum() > m_max:
                     c_max = _c_max
@@ -470,10 +483,10 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
         Parameters
         ----------
-        log_level_multiple : int
+        log_level_multiple
             Log level at which the function reports to `RtdLogger` in
             case of multiple non-negative parameters.
-        log_level_none : int
+        log_level_none
             Log level at which the function reports to `RtdLogger` in
             case of no non-negative parameters.
 
@@ -591,7 +604,7 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
     def evaluate(self, f_in: _np.array, c_in: _np.ndarray
                  ) -> _typing.Tuple[_np.ndarray, _np.ndarray]:
-        """Evaluate the propagation through the unit operation.
+        """Evaluate the propagation throughout the unit operation.
 
         Parameters
         ----------
@@ -603,10 +616,10 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
         Returns
         -------
-            f_out
-                Outlet flow rate profile.
-            c_out
-                Outlet concentration profile.
+        f_out
+            Outlet flow rate profile.
+        c_out
+            Outlet concentration profile.
 
         """
         # Make a copy of inlet profiles, so we don't modify the originals.
@@ -653,10 +666,10 @@ class UnitOperation(DefaultLoggerLogic, _ABC):
 
         Returns
         -------
-            f_out
-                Outlet flow rate profile.
-            c_out
-                Outlet concentration profile.
+        f_out
+            Outlet flow rate profile.
+        c_out
+            Outlet concentration profile.
 
         """
         return self._f, self._c
@@ -667,15 +680,15 @@ class ParameterSetList(_ABC):
 
     Key-value pairs passed to `assert_and_get_provided_kv_pairs` should
     contain all keys from (at least) one of the key groups in
-    `_possible_key_groups`. The method returns key-value pars with keys
+    `POSSIBLE_KEY_GROUPS`. The method returns key-value pars with keys
     from that group and all passed keys that can be also found in
-    `_optional_keys`.
+    `OPTIONAL_KEYS`.
 
     Examples
     --------
     >>> class DummyClass(ParameterSetList):
-    ...    _possible_key_groups = [['par_1'], ['par_2a', 'par_2b']]
-    ...    _optional_keys = ['key_plus_1', 'key_plus_2']
+    ...    POSSIBLE_KEY_GROUPS = [['par_1'], ['par_2a', 'par_2b']]
+    ...    OPTIONAL_KEYS = ['key_plus_1', 'key_plus_2']
     >>>
     >>> dc = DummyClass()
     >>> dc.assert_and_get_provided_kv_pairs(par_1=1, par_2a=2)
@@ -690,25 +703,29 @@ class ParameterSetList(_ABC):
 
     """
 
+    # noinspection PyPep8Naming
     @property
     @_abstractmethod
-    def _possible_key_groups(self) \
+    def POSSIBLE_KEY_GROUPS(self) \
             -> _typing.Sequence[_typing.Sequence[str]]:  # pragma: no cover
         """Possible key combinations.
 
-        To override it in a new class, simply define an attribute, e.g.:
-        _possible_key_groups = [['v_void'], ['f', 'rt_mean']]
+        Examples
+        --------
+        POSSIBLE_KEY_GROUPS = [['v_void'], ['f', 'rt_mean']]
 
         """
         raise NotImplementedError
 
+    # noinspection PyPep8Naming
     @property
     @_abstractmethod
-    def _optional_keys(self) -> _typing.Sequence[str]:  # pragma: no cover
+    def OPTIONAL_KEYS(self) -> _typing.Sequence[str]:  # pragma: no cover
         """Optional additional keys.
 
-        To override it in a new class, simply define an attribute, e.g.:
-        _optional_keys = ['skew', 't_delay']
+        Examples
+        --------
+        OPTIONAL_KEYS = ['skew', 't_delay']
 
         """
         raise NotImplementedError
@@ -717,24 +734,24 @@ class ParameterSetList(_ABC):
         """
         Parameters
         ----------
-        kwargs
+        **kwargs
             Inputs to `calc_pdf(**kwargs)` function
 
         Returns
         -------
         dict
-            Filtered `kwargs` so the keys contain first possible key
-            group in `_possible_key_groups` and any number of optional
-            keys from `_optional_keys`.
+            Filtered `**kwargs` so the keys contain first possible key
+            group in :attr:`POSSIBLE_KEY_GROUPS` and any number of
+            optional keys from :attr:`OPTIONAL_KEYS`.
 
         Raises
         ------
         ValueError
             If `**kwargs` do not contain keys from any of the groups
-            in `_possible_key_groups`.
+            in :attr:`POSSIBLE_KEY_GROUPS`.
 
         """
-        for group in self._possible_key_groups:
+        for group in self.POSSIBLE_KEY_GROUPS:
             if any([key not in kwargs.keys() for key in group]):
                 continue
             else:
@@ -742,13 +759,13 @@ class ParameterSetList(_ABC):
                 d = {key: kwargs.get(key) for key in group}
                 # Get optional keys.
                 d_extra = {key: kwargs.get(key)
-                           for key in self._optional_keys
+                           for key in self.OPTIONAL_KEYS
                            if key in kwargs.keys()}
                 # Combine and return.
                 return {**d, **d_extra}
 
         raise KeyError(f"Keys {list(kwargs.keys())} do not contain any of"
-                       f" the required groups: {self._possible_key_groups}")
+                       f" the required groups: {self.POSSIBLE_KEY_GROUPS}")
 
 
 class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
@@ -759,31 +776,7 @@ class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
     t
         Simulation time vector.
     pdf_id
-        Unique identifier of the PDF instance.
-
-    Attributes
-    ----------
-    trim_and_normalize
-        Trim edges of the peak by the threshold at the relative signal
-        specified by `cutoff_relative_to_max`. Default = True.
-    cutoff_relative_to_max
-        Cutoff as a share of max value of the pdf (default 0.0001).
-        It is defined to avoid very long tails of the distribution.
-
-    Methods
-    -------
-    get_p()
-        Get calculated PDF.
-    update_pdf(**kwargs)
-        Re-calculate PDF based on specified parameters.
-
-    Abstract Methods
-    ----------------
-    _calc_pdf(kw_pars: dict)
-        Calculate new pdf for a given set of parameters. The keys of the
-        `kw_pars` include keys from one of the group in
-        `_possible_key_groups` and any optional subset of keys from
-        `_optional_keys`.
+        Unique identifier of the `PDF` instance.
 
     """
 
@@ -798,7 +791,25 @@ class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
 
         # apply cutoff
         self.trim_and_normalize = True
+        """Trim edges of the pdf and normalize it afterwards.
+        
+        Default = True.
+        
+        Relative threshold value is specified by
+        :attr:`cutoff_relative_to_max`.
+        
+        Normalization is performed after the trimming.
+        The area of pd == 1.
+        
+        """
         self.cutoff_relative_to_max = 0.0001
+        """Cutoff as a share of max value of the pdf (default 0.0001).
+        
+        It is defined to avoid very long tails of the distribution.
+        
+        Cutoff is enabled if :attr:`trim_and_normalize` == True.
+        
+        """
 
         # placeholder for the result of the pdf calculation
         self._pdf: _np.array = _np.array([])
@@ -818,12 +829,15 @@ class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
     def update_pdf(self, **kwargs):
         """Re-calculate PDF based on specified parameters.
 
+        The calculated probability distribution can be obtained by
+        :func:`get_p()`
+
         Parameters
         ----------
-        kwargs
+        **kwargs
             Should contain keys from one of the group in
-            `self._possible_key_groups`.
-            It may contain additional keys from `self._optional_keys`.
+            :attr:`POSSIBLE_KEY_GROUPS`.
+            It may contain additional keys from :attr:`OPTIONAL_KEYS`.
 
         """
         kw = self.assert_and_get_provided_kv_pairs(**kwargs)
@@ -835,13 +849,18 @@ class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
     def _calc_pdf(self, kw_pars: dict) -> _np.ndarray:  # pragma: no cover
         """Calculation of probability distribution.
 
+        Evaluates pdf for a given set of parameters. The keys of the
+        `kw_pars` include keys from one of the group in
+        :attr:`POSSIBLE_KEY_GROUPS` and any optional subset of keys from
+        :attr:`OPTIONAL_KEYS`.
+
         Parameters
         ----------
-        kw_pars: dict
+        kw_pars
             Key-value parameters.
             Keys contain keys from one of the groups specified in
-            `self._possible_key_groups`.
-            Keys may contain additional keys from `self._optional_keys`.
+            `self.POSSIBLE_KEY_GROUPS`.
+            Keys may contain additional keys from `self.OPTIONAL_KEYS`.
         """
         raise NotImplementedError
 
@@ -850,11 +869,13 @@ class PDF(ParameterSetList, DefaultLoggerLogic, _ABC):
 
         Returns
         -------
-        p: np.ndarray
+        p: ndarray
             Evaluated probability distribution function.
-            `sum(p * self._dt) == 1`
+
             Corresponding time axis starts with 0 and has a fixed step
-            of self._dt.
+            size (`_dt`).
+
+            If :attr:`trim_and_normalize` == 1 then `sum(p * _dt) == 1`.
 
         """
         assert self._pdf.size > 0, f"PDF is empty. Make sure `update_pdf`" \
@@ -871,13 +892,10 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
 
     Parameters
     ----------
+    dt
+        Time step duration.
     bt_profile_id
         Unique identifier of the PDF instance. Used for logs.
-
-    Notes
-    -----
-    See docstring of `ParameterSetList` for information about key
-    groups.
 
     """
 
@@ -887,15 +905,32 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
         assert dt > 0
         self._dt = dt
 
-    def update_btc_parameters(self, **kwargs) -> None:
-        """Update binding dynamics for a given set of parameters."""
+    def update_btc_parameters(self, **kwargs):
+        """Update binding dynamics for a given set of parameters.
+
+        Parameters
+        ----------
+        **kwargs
+            Should contain keys from one of the group in
+            :attr:`POSSIBLE_KEY_GROUPS`.
+            It may contain additional keys from :attr:`OPTIONAL_KEYS`.
+
+        """
         kw = self.assert_and_get_provided_kv_pairs(**kwargs)
         self._update_btc_parameters(kw)
 
     def calc_c_bound(self,
                      f_load: _np.ndarray,
                      c_load: _np.ndarray) -> _np.ndarray:
-        """Calculates what parts of load bin to the column.
+        """Calculates what parts of load bind to the column.
+
+        The default implementation calculates cumulative mass of the
+        load material and passes it to :func:`_update_btc_parameters`
+        abstract method for evaluation on what shares of the load
+        bind to the column. Those shares are then multiplied by `c_load`
+        in order to obtain resulting `c_bound`.
+
+        This method is meant to be overridden, if needed.
 
         Parameters
         ---------
@@ -907,14 +942,11 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
 
         Returns
         -------
-        c_bound
-            Parts of the load that binds to the column during the
-            load step. `c_bound` has the same shape as `c_load`.
+        c_bound: ndarray
+            Parts of the load that bind to the column during the
+            load step.
 
-        Notes
-        -----
-        This is default implementation. The user is welcome to override
-        this function in a custom child class.
+            `c_bound` has the same shape as `c_load`.
 
         """
         # All species are summed together.
@@ -929,7 +961,7 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
 
     @_abstractmethod
     def _update_btc_parameters(self,
-                               kw_pars: dict) -> None:  # pragma: no cover
+                               kw_pars: dict):  # pragma: no cover
         """Update binding dynamics for a given key-value set.
 
         Parameters
@@ -937,8 +969,8 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
         kw_pars: dict
             Key-value parameters.
             Keys contain keys from one of the groups specified in
-            `self._possible_key_groups` and may contain additional keys
-            from `self._optional_keys`.
+            `self.POSSIBLE_KEY_GROUPS` and may contain additional keys
+            from `self.OPTIONAL_KEYS`.
         """
 
         pass
@@ -968,19 +1000,20 @@ class ChromatographyLoadBreakthrough(ParameterSetList,
 
     @_abstractmethod
     def get_total_bc(self) -> float:  # pragma: no cover
-        """Total binding capacity
+        """Total binding capacity.
 
-        Useful for determining column utilization.
+        Meant e.g. for determining column utilization.
 
         """
         pass
 
 
 class RtdModel(DefaultLoggerLogic, _ABC):
-    """Combines inlet and a train of unit operations into a model.
+    """Combines `Inlet` and a train of `UnitOperation`-s into a model.
 
-    The logger assigned to the instance of RtdModel is propagated
-    throughout `inlet` and unit operations in `dsp_uo_chain`.
+    The logger assigned to the instance of RtdModel is passed on to
+    :class:`bio_rtd.core.Inlet` and
+    :class:`bio_rtd.core.UnitOperation` instances.
 
     Parameters
     ----------
@@ -989,20 +1022,18 @@ class RtdModel(DefaultLoggerLogic, _ABC):
     dsp_uo_chain
         Sequence of unit operations. The sequence needs to be in order.
     logger
-        Logger that the model uses for sending status messages and
-        storing intermediate data.
+        Logger for sending status messages and storing intermediate
+        data.
     title
         Title of the model.
     desc
         Description of the model.
 
-    Methods
-    -------
-    recalculate(start_at, on_update_callback)
-        Recalculates the process fluid propagation, starting at
-        `start_at` unit operation (-1 for inlet and entire process).
-        Callback function can be specified. It receives the index of
-        the just updated unit operation.
+    See Also
+    --------
+    :class:`bio_rtd.core.Inlet`
+    :class:`bio_rtd.core.UnitOperation`
+    :class:`bio_rtd.logger.RtdLogger`
 
     """
 
@@ -1019,22 +1050,25 @@ class RtdModel(DefaultLoggerLogic, _ABC):
             "Each unit operation must have a unique id (`uo_id`)"
         # Bind parameters.
         self.inlet = inlet
+        """:class:`bio_rtd.core.Inlet`: Inlet for `self.dsp_uo_chain`"""
         self.dsp_uo_chain = dsp_uo_chain
+        """sequence of :class:`bio_rtd.core.UnitOperation`: Chain of
+        unit operations in the process.
+        
+        Unit operations need to be in proper order.
+        
+        The logger in unit operations is overridden by the logger from
+        this model.
+        
+        """
         self.title = title
+        """Human readable title (mostly for plots)"""
         self.desc = desc
+        """Human readable description (also mostly for plots)"""
         # Init data log tree with empty dict for each unit operation.
         self._log_tree = _OrderedDict(
             {inlet.uo_id: {}, **{uo.uo_id: {} for uo in dsp_uo_chain}})
         self.log = logger if logger is not None else self.log
-
-    @DefaultLoggerLogic.log.setter
-    def log(self, logger: _logger.RtdLogger):
-        self._logger = logger
-        self._logger.set_data_tree(self._instance_id, self._log_tree)
-        # Pass logger to inlet and unit operations.
-        self.inlet.log = logger
-        for uo in self.dsp_uo_chain:
-            uo.log = logger
 
     def get_dsp_uo(self, uo_id: str) -> UnitOperation:
         """Get reference to a `UnitOperation` with specified `uo_id`."""
@@ -1045,7 +1079,7 @@ class RtdModel(DefaultLoggerLogic, _ABC):
                        f"Available: {[uo.uo_id for uo in self.dsp_uo_chain]}")
 
     def recalculate(self,
-                    start_at: int = 0,
+                    start_at: int = -1,
                     on_update_callback: _typing.Optional[
                         _typing.Callable[[int], None]
                     ] = None):
@@ -1054,21 +1088,22 @@ class RtdModel(DefaultLoggerLogic, _ABC):
         Parameters
         ----------
         start_at
-            The index of first unit operation that needs to be
-            re-evaluated. Default = 0.
-            If -1, then the inlet profile is also re-evaluated.
+            Index of first unit operation for re-evaluation.
+
+            Indexing starts at 0 (-1 for the inlet). Default = -1.
         on_update_callback
             Optional callback function which receives an integer.
 
             The integer corresponds to the index of re-evaluated unit
-            operation (-1 for inlet).
-            This can serve as a trigger for updating UI after
-            re-evaluation of individual unit operations.
+            operation, starting with 0 (-1 for inlet).
+
+            This can serve as a trigger for updating UI or any other
+            post-processing after re-evaluation of unit operations.
 
         """
         # Evaluate inlet profile.
         if start_at == -1:
-            self.inlet._refresh()
+            self.inlet.refresh()
             self._notify_updated(-1, on_update_callback)
             start_at = 0
         # Get outlet of previous unit operation.
@@ -1098,29 +1133,33 @@ class RtdModel(DefaultLoggerLogic, _ABC):
         if on_update_callback:
             on_update_callback(uo_i)
 
+    @DefaultLoggerLogic.log.setter
+    def log(self, logger: _logger.RtdLogger):
+        self._logger = logger
+        self._logger.set_data_tree(self._log_entity_id, self._log_tree)
+        # Pass logger to inlet and unit operations.
+        self.inlet.log = logger
+        for uo in self.dsp_uo_chain:
+            uo.log = logger
+
+    def set_logger_from_parent(self, parent_id: str,
+                               logger: _logger.RtdLogger):  # pragma: no cover
+        # This dummy definition is here just to maintain the right order
+        # of methods in documentation.
+        super().set_logger_from_parent(parent_id, logger)
+
 
 class UserInterface(_ABC):
     """Wrapper around RtdModel suitable for building GUI on top of it.
 
     Parameters
     ----------
-    rtd_model : RtdModel
-        RTD model.
+    rtd_model
+        Residence time distribution model.
 
-    Attributes
-    ----------
-    species_label : list of str
-        Labels of the species in concentration array.
-    x_label
-        Label of x axis (time). Default = 't'
-    y_label_c
-        Label of y axis (concentration). Default = 'c'
-    y_label_f
-        Label of y axis (flow rate). Default = 'f'
-    start_at : int
-        The index of unit operation (starting with 0) at which the
-        re-evaluation starts. The value of -1 means that the inlet
-        profile is also reevaluated.
+    See Also
+    --------
+    :class:`bio_rtd.core.RtdModel`
 
     """
 
@@ -1128,11 +1167,25 @@ class UserInterface(_ABC):
         self.rtd_model = rtd_model
 
         # default values - update them after init
-        self.start_at = -1
-        self.species_label = self.rtd_model.inlet.species_list
-        self.x_label = 't'
-        self.y_label_c = 'c'
-        self.y_label_f = 'f'
+        self.start_at: int = -1
+        """Index of first unit operation for re-evaluation.
+                
+        Indexing starts at 0 (-1 for the inlet). Default = -1.
+        
+        """
+        self.species_label: _typing.Sequence[str] = \
+            self.rtd_model.inlet.species_list
+        """Labels of the species in concentration array.
+        
+        Initially inherited from :class:`bio_rtd.core.Inlet` instance.
+        
+        """
+        self.x_label: str = 't'
+        """Label of x axis (time). Default = 't'"""
+        self.y_label_c: str = 'c'
+        """Label of y axis (concentration). Default = 'c'"""
+        self.y_label_f: str = 'f'
+        """Label of y axis (flow rate). Default = 'f'"""
 
     def recalculate(self, forced=False):
         """Re-evaluates the model from the `start_at` index onwards.
@@ -1142,7 +1195,7 @@ class UserInterface(_ABC):
         forced
             If true, the entire model (inlet + unit operations) is
             re-evaluated. The same can be achieved by setting
-            `self.start_at` to -1.
+            :attr:`start_at` to -1.
 
         """
         start_at = -1 if forced else self.start_at

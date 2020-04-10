@@ -1,18 +1,9 @@
-"""Template for FlowThrough and FlowThroughWithSwitching UnitOperation
+"""Template for FlowThrough and FlowThroughWithSwitching UnitOperation.
 
-For more details about process parameters see docstrings of
-`FlowThrough` and `FlowThroughWithSwitching`.
-
-Guide
------
-1. Define a time step and a simulation time vector.
-2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
-   Replace variable types with values.
-   Remove or comment out the ones that are not needed.
-3. Instantiate the unit operation with parameters.
-   Updated instance with attributes.
-
-See the example below `PARAMETERS` and `ATTRIBUTES`.
+See Also
+--------
+:class:`bio_rtd.uo.fc_uo.FlowThrough`
+:class:`bio_rtd.uo.fc_uo.FlowThroughWithSwitching`
 
 Notes
 -----
@@ -22,7 +13,7 @@ parameters that are marked.
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 import numpy as np
@@ -38,14 +29,27 @@ t = np.linspace(0, 10, 100)
 tmp_uo = FlowThroughWithSwitching(
     t=t,
     pdf=pdf.GaussianFixedDispersion(t, 2 * 2 / 45),
-    uo_id="dilution_direct",
-    gui_title="Dilution, direct instance"  # Optional.
+    uo_id="ft_with_switching_direct",
+    gui_title="FlowThroughWithSwitching, direct instance"  # Optional.
 )
 tmp_uo.v_void = 3.4
 tmp_uo.t_cycle = 20
 
 
-"""Using dict of parameters and attributes."""
+"""Using dict of parameters and attributes.
+
+Guide
+
+1. Define a time step and a simulation time vector.
+2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
+   Replace variable types with values.
+   Remove or comment out the ones that are not needed.
+3. Instantiate the unit operation with parameters.
+   Updated instance with attributes.
+
+See the example below `PARAMETERS` and `ATTRIBUTES`.
+
+"""
 
 PARAMETERS = {
     # Required.

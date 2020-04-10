@@ -9,9 +9,13 @@ Templates for individual unit operations can be found in
 This file only contains additional attributes that can be added to any
 unit operation.
 
+See Also
+--------
+:class:`bio_rtd.core.UnitOperation`
+
 """
 
-__version__ = '0.3.0'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 import numpy as np

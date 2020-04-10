@@ -31,11 +31,11 @@ Simulating breakthrough profile with  :class:`bio_rtd.core.RtdModel` with inlet 
 
 .. bokeh-plot:: ../../examples/documentation/tutorial_1e.py
 
+See :ref:`Features` section for features.
+
 See :ref:`Examples` section for more examples.
 
-See :ref:`Templates` section on how to set up specific unit operations.
-
-See :ref:`Features` section for brief overview of individual unit operations.
+See :ref:`Templates` section on how to set up specific unit operation.
 
 See :ref:`API Reference` for detailed info about parameters,
 attributes and methods for each unit operation.

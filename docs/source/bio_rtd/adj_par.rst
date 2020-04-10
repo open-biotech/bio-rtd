@@ -1,5 +1,6 @@
 bio\_rtd.adj\_par
 =================
+.. automodule:: bio_rtd.adj_par
 
 AdjParSlider
 ------------

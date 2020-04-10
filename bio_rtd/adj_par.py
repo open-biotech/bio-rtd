@@ -3,11 +3,18 @@
 Adjustable attributes are mainly used by GUI in order to offer
 responsive parameter setting.
 
+Notes
+-----
+Technically this module relates to instance attributes
+rather than parameters. However, the term 'process parameters'
+is well established in biotech, hence the word 'parameter' appears
+in class names and docstring instead of 'instance attribute`.
+
 """
 
 __all__ = ['AdjParSlider', 'AdjParRange', 'AdjParBoolean',
            'AdjParBooleanMultiple', 'AdjustableParameter']
-__version__ = '0.7'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 import typing as _typing
@@ -15,45 +22,28 @@ from abc import ABC as _ABC
 
 
 class AdjustableParameter(_ABC):
-    """Adjustable parameter for a UnitOperation (or Inlet).
+    """Adjustable parameter for `UnitOperation` (or `Inlet`).
 
     The class does not provide any logic. It just provides a
     unified way to specify an adjustable attribute.
 
+    This class primarily serves as an abstract class for specific
+    extensions.
+
     Parameters
     ----------
     var_list
-        A list of attributes of a `UnitOperation` affected by the
-        `AdjustableParameter`.
+        A list of attributes affected by the `AdjustableParameter`.
     v_range
         Range of values.
-        For boolean set None.
-        For range specify [start, end, step].
-        For list set list. If the list has two columns,
-        the first one is the title and the second is the value.
     v_init
-        Initial value. If None (default), the value is inherited from
-        the initial attribute value (at the start of the runtime).
+        Initial value. If None, the value is inherited from attribute.
     scale_factor
-        The scale factor to compensate for differences in units.
-        E.g.: Setting time in [h] for attribute set in [min] requires
-        a `scale_factor` of 60.
+        Scale factor.
     par_name
-        Attribute title (e.g. 'Initial delay [min]') or list of titles
-        in case of multiple options (e.g. radio button group).
+        Attribute title.
     gui_type
-        Preferred method for setting parameter in gui parameters.
-        If None (default) or the gui does not support the type,
-        then the gui should decide the method based on `v_init` and/or
-        `var_list`.
-        Example values:
-        'checkbox', 'range', 'slider', 'select', 'multi-select'
-
-    Notes
-    -----
-    Technically the class relates to instance attributes
-    rather than parameters. However, the term 'process parameters'
-    is well established in biotech, hence the class name.
+        Method for setting parameter in GUI.
 
     """
 
@@ -73,12 +63,78 @@ class AdjustableParameter(_ABC):
                      str,
                      _typing.Sequence[str]]] = None,
                  gui_type: _typing.Optional[str] = None):
-        self.var_list = var_list
-        self.v_range = v_range
-        self.v_init = v_init
-        self.scale_factor = scale_factor
-        self.par_name = par_name
-        self.gui_type = gui_type
+        self.var_list: _typing.List[str] = var_list
+        """A list of attributes affected by the `AdjustableParameter`.
+        
+        Attributes typically belong to 
+        :class:`bio_rtd.core.UnitOperation` or
+        :class:`bio_rtd.core.Inlet` instance.
+        
+        Examples
+        --------
+        var_list = ['c_start[1]', 'c_end[1]']
+        
+        var_list = ['starts_empty']
+        
+        """
+        self.v_range: _typing.Optional[_typing.Union[
+                     _typing.Tuple[float, float, float],
+                     _typing.Sequence[str],
+                     _typing.Sequence[float],
+                     _typing.Sequence[_typing.Tuple[str, str]]]] = v_range
+        """Range of values.
+        
+        For boolean set None.
+        
+        For range specify [start, end, step].
+        
+        For list set list. If the list has two columns,
+        the first one is the title and the second is the value.
+        
+        """
+        self.v_init: _typing.Optional[_typing.Union[
+                     float,
+                     bool,
+                     _typing.Sequence[float]]] = v_init
+        """Initial value.
+        
+        If None (default), the value is inherited from initial attribute
+        value at the start of runtime.
+        
+        """
+        self.scale_factor: float = scale_factor
+        """Scale factor for compensation for differences in units.
+        
+        Examples
+        --------
+        Setting time (:attr:`v_init`) in [h] for attribute 
+        (in :attr:`var_list`) in [min] requires
+        a `scale_factor` of 60.
+        
+        """
+        self.par_name: _typing.Optional[_typing.Union[
+                     str,
+                     _typing.Sequence[str]]] = par_name
+        """Attribute title.
+        
+        Examples
+        --------
+        par_name = 'Initial delay [min]'  # slider, range, boolean
+        
+        par_name = ['Option 1', 'Option 2', 'Option 3']  # radio buttons
+        
+        """
+        self.gui_type: _typing.Optional[str] = gui_type
+        """Method for setting parameter in GUI.
+        
+        If None (default) or the gui does not support the type,
+        then the gui should decide the method based on `v_init` and/or
+        `var_list`.
+        
+        Example values:
+        'checkbox', 'range', 'slider', 'select', 'multi-select'
+        
+        """
 
 
 class AdjParBoolean(AdjustableParameter):
@@ -87,13 +143,17 @@ class AdjParBoolean(AdjustableParameter):
     Parameters
     ----------
     var
-        Variable of a UnitOperation affected by the parameter.
-    v_init or list of bool
-        Initial value or list of initial values for each item in
-        `var_list`.
-    par_name or list of str
-        List of parameter names. If defined,
-        the shape of the should match `var_list`.
+        Attribute affected by the `AdjParBoolean`.
+    v_init
+        Initial value. If None, the value is inherited from attribute.
+    par_name
+        Attribute title.
+    gui_type
+        Method for setting parameter in GUI. Default = 'checkbox'.
+
+    See Also
+    --------
+    :class:`bio_rtd.adj_par.AdjustableParameter`
 
     """
 
@@ -101,12 +161,10 @@ class AdjParBoolean(AdjustableParameter):
                  var: str,
                  v_init: _typing.Optional[bool] = None,
                  par_name: _typing.Optional[str] = None,
-                 scale_factor: float = 1,
                  gui_type: _typing.Optional[str] = 'checkbox'):
         super().__init__([var],
                          v_init=v_init,
                          par_name=par_name,
-                         scale_factor=scale_factor,
                          gui_type=gui_type)
 
 
@@ -115,17 +173,18 @@ class AdjParBooleanMultiple(AdjustableParameter):
 
     Parameters
     ----------
-    var_list : list of str
-        A list of attributes of a `UnitOperation` affected by the
-        `AdjustableParameter`.
+    var_list
+        List of attributes affected by the `AdjParBooleanMultiple`.
     v_init
-        Initial value for each entry in `var_list`.
-        If None (default), the value is inherited from the initial
-        attribute values at the start of the runtime. If specified,
-        the shape should match the shape of `var_list`.
-    par_name : list of str
-        Attribute title (e.g. 'Initial delay [min]') for each option.
-        The shape should batch the shape of `var_list`.
+        Initial value. If None, the value is inherited from attribute.
+    par_name
+        Attribute title.
+    gui_type
+        Method for setting parameter in GUI. Default = 'radio_group'.
+
+    See Also
+    --------
+    :class:`bio_rtd.adj_par.AdjustableParameter`
 
     """
 
@@ -133,7 +192,6 @@ class AdjParBooleanMultiple(AdjustableParameter):
                  var_list: _typing.List[str],
                  v_init: _typing.Optional[_typing.Sequence[bool]] = None,
                  par_name: _typing.Optional[_typing.Sequence[str]] = None,
-                 scale_factor: float = 1,
                  gui_type: _typing.Optional[str] = 'radio_group'):
         if v_init is not None:
             assert len(v_init) == len(var_list)
@@ -142,26 +200,42 @@ class AdjParBooleanMultiple(AdjustableParameter):
         super().__init__(var_list=var_list,
                          v_init=v_init,
                          par_name=par_name,
-                         scale_factor=scale_factor,
                          gui_type=gui_type)
 
 
 class AdjParSlider(AdjustableParameter):
-    """A value slider version of `AdjustableParameter`
+    """A value slider version of `AdjustableParameter`.
 
     Parameters
     ----------
     var
-        Variable of a UnitOperation affected by the parameter.
-    v_init or Sequence[bool]
-    v_range or (float, float) or (float, float, float)
-        Defines range end or [start, end] or [start, end, step].
-        If step is not defined, the `step = (start - end) / 10`.
-        If start is not defined the `start = 0`.
+        Attribute affected by the `AdjParSlider`.
+    v_range
+        Range of values.
 
-    Notes
-    -----
-    For more info see docstring of `AdjustableParameter` superclass.
+        Defines range end or [start, end] or [start, end, step].
+
+        If step is not defined, the `step = (start - end) / 10`.
+
+        If start is not defined the `start = 0`.
+    v_init
+        Initial value. If None, the value is inherited from attribute.
+    scale_factor
+        Scale factor for compensation for differences in units.
+
+        Examples
+        --------
+        Setting time (:attr:`v_init`) in [h] for attribute
+        (in :attr:`var_list`) in [min] requires
+        a `scale_factor` of 60.
+    par_name
+        Attribute title.
+    gui_type
+        Method for setting parameter in GUI. Default = 'slider'.
+
+    See Also
+    --------
+    :class:`bio_rtd.adj_par.AdjustableParameter`
 
     """
 
@@ -192,20 +266,41 @@ class AdjParRange(AdjustableParameter):
     """
     Defines a range slider version of `AdjustableParameter`
 
-    Attributes
+    Parameters
     ----------
-    var_list : Tuple[str, str]
-        Defines attributed affected by the `AdjustableParameter`.
+    var_list
+        Defines attributed affected by the `AdjParRange`.
+
         First has value of the start of the interval and second of the
         end of the interval.
-    v_range or Tuple[float, float] or Tuple[float, float, float]
+    v_range
+        Range of values.
+
         Defines range end or [start, end] or [start, end, step].
+
         If step is not defined, the `step = (start - end) / 10`.
+
         If start is not defined the `start = 0`.
-    v_init : Tuple[float, float]
+    v_init
         Initial value [interval start, interval end]. If None (default),
         then the initial values are assigned from the initial conditions
         at the start of the simulation.
+    scale_factor
+        Scale factor for compensation for differences in units.
+
+        Examples
+        --------
+        Setting time (:attr:`v_init`) in [h] for attribute
+        (in :attr:`var_list`) in [min] requires
+        a `scale_factor` of 60.
+    par_name
+        Attribute title.
+    gui_type
+        Method for setting parameter in GUI. Default = 'range'.
+
+    See Also
+    --------
+    :class:`bio_rtd.adj_par.AdjustableParameter`
 
     """
 

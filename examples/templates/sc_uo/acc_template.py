@@ -1,9 +1,49 @@
-"""Template for creating a model of ACC unit operation.
+"""Template for creating a model of `ACC` `UnitOperation`.
 
-For more details about process parameters see docstrings of `ACC`.
+See Also
+--------
+:class:`bio_rtd.uo.sc_uo.ACC`
+
+"""
+
+__version__ = '0.7.1'
+__author__ = 'Jure Sencar'
+
+import numpy as np
+from typing import List
+
+from bio_rtd.uo.sc_uo import ACC
+from bio_rtd.chromatography import bt_load
+from bio_rtd import core, pdf
+
+"""Direct instance creation."""
+
+tmp_t = np.linspace(0, 1000, 10001)
+tmp_dt = tmp_t[1]
+tmp_acc = ACC(
+    t=tmp_t,
+    uo_id="acc_direct_instance",
+    load_bt=bt_load.ConstantPatternSolution(tmp_dt, dbc_100=240, k=0.05),
+    peak_shape_pdf=pdf.GaussianFixedDispersion(tmp_t, 8 ** 2 / 30)
+)
+
+tmp_acc.cv = 13
+tmp_acc.equilibration_cv = 3
+tmp_acc.equilibration_f_rel = 1
+tmp_acc.load_cv = 25
+tmp_acc.wash_cv = 5
+tmp_acc.unaccounted_losses_rel = 0.2
+tmp_acc.elution_cv = 3
+tmp_acc.elution_f_rel = 1 / 4
+tmp_acc.elution_peak_position_cv = 1.6
+tmp_acc.elution_peak_cut_start_cv = 1.05
+tmp_acc.elution_peak_cut_end_cv = 2.3
+tmp_acc.regeneration_cv = 1
+
+"""Using dict of parameters and attributes.
 
 Guide
------
+
 1. Define a time step and a simulation time vector.
 2. Use `PARAMETERS` and `ATTRIBUTES` as a template.
    Replace variable types with values.
@@ -14,16 +54,6 @@ Guide
 See the example below `PARAMETERS` and `ATTRIBUTES`.
 
 """
-
-__version__ = '0.3.0'
-__author__ = 'Jure Sencar'
-
-import numpy as np
-from typing import List
-
-from bio_rtd.uo.sc_uo import ACC
-from bio_rtd.chromatography import bt_load
-from bio_rtd import core, pdf
 
 PARAMETERS = {
     # Required.
@@ -40,7 +70,8 @@ ATTRIBUTES = {
     # One of next two.
     "cv": float,
     "ft_mean_retentate": float,  # Requires `column_porosity_retentate`.
-    # Required if `ft_mean_retentate`, otherwise ignored.
+    # Required if `ft_mean_retentate`, `load_c_end_ss` or
+    # `load_c_end_relative_ss`, otherwise ignored.
     "column_porosity_retentate": float,
 
     # Optional. Default = [] (empty).
@@ -57,7 +88,9 @@ ATTRIBUTES = {
     "load_cv": float,
     "load_c_end_ss": np.ndarray,
     "load_c_end_relative_ss": float,
-    # Optional. Default = False.
+    # Required if `load_c_end_ss` or `load_c_end_relative_ss`.
+    "load_recycle_pdf": core.PDF,
+    # Optional. Default = True.
     "load_c_end_estimate_with_iterative_solver": bool,
     # Optional. Default = 1000.
     # Ignored if `load_c_end_estimate_with_iterative_solver == False`.
@@ -144,7 +177,7 @@ chromatographic process).
 
 uo_pars = {
     # Required.
-    "uo_id": "pcc_template_implementation",
+    "uo_id": "acc_template_implementation",
     "load_bt": bt_load.ConstantPatternSolution(dt, dbc_100=240, k=0.05),
     "peak_shape_pdf": pdf.GaussianFixedDispersion(t, 8**2 / 30),
 
@@ -156,8 +189,9 @@ uo_attr = {
     # One of next two.
     "cv": 13,
     # "ft_mean_retentate": float,  # Requires `column_porosity_retentate`.
-    # Required if `ft_mean_retentate`, otherwise ignored.
-    # "column_porosity_retentate": float,
+    # Required if `ft_mean_retentate`, `load_c_end_ss` or
+    # `load_c_end_relative_ss`, otherwise ignored.
+    "column_porosity_retentate": 0.64,
 
     # Optional. Default = [].
     # "non_binding_species": List[int],  # indexing starts with 0
@@ -170,20 +204,23 @@ uo_attr = {
     # "equilibration_f": float,
     "equilibration_f_rel": 1,  # relative to inlet (load) flow rate
 
-    # One of next three.
+    # One of next three. `load_cv` is preferred.
+    # Other two need `column_porosity_retentate` and `load_recycle_pdf`.
     # "load_cv": float,
     # "load_c_end_ss": np.ndarray,
     "load_c_end_relative_ss": 0.7,  # 70 % of breakthrough
+    # Required if `load_c_end_ss` or `load_c_end_relative_ss`.
+    "load_recycle_pdf": pdf.GaussianFixedDispersion(tmp_t, 2 * 2 / 30),
 
-    # Optional. Default = False.
-    "load_c_end_estimate_with_iterative_solver": True,
+    # Optional. Default = True.
+    # "load_c_end_estimate_with_iterative_solver": bool,
 
     # Optional. Default = 1000.
     # Ignored if `load_c_end_estimate_with_iterative_solver == False`.
     # "load_c_end_estimate_with_iterative_solver_max_iter": int,
 
     # Optional.
-    "load_extend_first_cycle": True,  # Default: False
+    # "load_extend_first_cycle": bool,  # Default: False
 
     # Ignored if `load_extend_first_cycle == True`.
     # If both, the duration is added together.

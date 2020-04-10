@@ -10,13 +10,13 @@ a bunch of plots.
 
 import numpy as np
 
-from bokeh.io import show
 from bokeh.layouts import gridplot
 from bokeh.models import LinearAxis, Range1d
-from bokeh.plotting import figure
+from bokeh.plotting import figure, show
 
 from bio_rtd.logger import DataStoringLogger
 from examples.templates.sc_uo.pcc_template import t, dt, pcc
+
 
 """Basic use."""
 # Define inlet flow rate. Same shape at `t`.
@@ -25,6 +25,8 @@ f = np.ones_like(t) * 3.5
 c = np.ones([1, t.size]) * 4
 # Set logger that stored data
 pcc.log = DataStoringLogger()
+# Suppress warnings.
+pcc.log.log_level = pcc.log.ERROR
 # Simulate.
 f_out, c_out = pcc.evaluate(f, c)
 
@@ -47,13 +49,7 @@ p1.line(x, c_out[0],
         line_width=2, color='navy', legend_label='c_out')
 # show(p1)
 
-"""Print data from log."""
-# get data tree from log
-data_tree = pcc.log.get_data_tree(pcc.uo_id)
-# print data
-print(data_tree["t_cycle_optimization_loop_iter"])
-
-"""Plot elution step profiles from log.
+"""Plot data from log.
 
 Notes
 -----
@@ -65,6 +61,10 @@ Model stores parameters and time profiles in log if:
     `pcc.log.log_level_data <= pcc.log.DEBUG`.
 
 """
+
+# Get data tree from log.
+data_tree = pcc.log.get_data_tree(pcc.uo_id)
+
 # Elution peak shape.
 y = data_tree['p_elution_peak']
 p2 = figure(plot_width=695, plot_height=350, title="Elution peak shape",

@@ -46,7 +46,7 @@ class MockUpInlet(core.Inlet):
         self._f_out = f.copy()
         self._c_out = c.copy()
 
-    def _refresh(self):
+    def refresh(self):
         self._f_out += 1
         self._c_out += 1.5
 
@@ -80,7 +80,6 @@ class TestInlet(unittest.TestCase):
         self.assertEqual(inlet.uo_id, inlet_id)
         self.assertEqual(inlet.gui_title, gui_title)
         # placeholders
-        self.assertIsNone(inlet.place_inlet_before_uo_id)
         self.assertTrue(len(inlet.adj_par_list) == 0)
 
         # getters
@@ -88,7 +87,7 @@ class TestInlet(unittest.TestCase):
         self.assertEqual(inlet._n_species, inlet.get_n_species())
 
         # refresh method
-        inlet._refresh()
+        inlet.refresh()
         np.testing.assert_array_almost_equal(inlet._f_out, f + 1)
         np.testing.assert_array_equal(inlet._f_out, inlet.get_result()[0])
         np.testing.assert_array_almost_equal(inlet._c_out, c + 1.5)
@@ -884,8 +883,8 @@ class TestUnitOperation(unittest.TestCase):
 
 
 class MockUpParameterSetList(core.ParameterSetList):
-    _possible_key_groups = [["key1"], ["key2a", "key2b"]]
-    _optional_keys = ["optional_key_i", "optional_key_ii", "optional_key_iii"]
+    POSSIBLE_KEY_GROUPS = [["key1"], ["key2a", "key2b"]]
+    OPTIONAL_KEYS = ["optional_key_i", "optional_key_ii", "optional_key_iii"]
 
 
 class TestParameterSetList(unittest.TestCase):
@@ -930,8 +929,8 @@ class TestParameterSetList(unittest.TestCase):
 
 
 class MockUpPDF(core.PDF):
-    _possible_key_groups = [["key1"], ["key2a", "key2b"]]
-    _optional_keys = ["optional_key_i", "optional_key_ii", "optional_key_iii"]
+    POSSIBLE_KEY_GROUPS = [["key1"], ["key2a", "key2b"]]
+    OPTIONAL_KEYS = ["optional_key_i", "optional_key_ii", "optional_key_iii"]
 
     def _calc_pdf(self, kw_pars: dict) -> np.ndarray:
 
@@ -1029,8 +1028,8 @@ class TestPDF(unittest.TestCase):
 
 
 class MockUpChromatographyLoadBreakthrough(core.ChromatographyLoadBreakthrough):
-    _possible_key_groups = [["bound_proportion"]]
-    _optional_keys = ["add_to_bound_proportion"]
+    POSSIBLE_KEY_GROUPS = [["bound_proportion"]]
+    OPTIONAL_KEYS = ["add_to_bound_proportion"]
 
     bound_proportion = 0.3
 
@@ -1194,21 +1193,21 @@ class TestRtdModelAndUserInterface(unittest.TestCase):
         # check callback
         self.rtd_model.recalculate(-1, callback_fnc)
         self.assertEqual(recalculated, [-1, 0, 1, 2])
-        self.assert_print(["Inlet profile updated",
-                           "Unit operation `uo_1` updated",
-                           "Unit operation `uo_2` updated",
-                           "Unit operation `uo_3` updated"])
+        self.assert_print(["model_1: Inlet profile updated",
+                           "model_1: Unit operation `uo_1` updated",
+                           "model_1: Unit operation `uo_2` updated",
+                           "model_1: Unit operation `uo_3` updated"])
         recalculated.clear()
         self.rtd_model.recalculate(0, callback_fnc)
         self.assertEqual(recalculated, [0, 1, 2])
-        self.assert_print(["Unit operation `uo_1` updated",
-                           "Unit operation `uo_2` updated",
-                           "Unit operation `uo_3` updated"])
+        self.assert_print(["model_1: Unit operation `uo_1` updated",
+                           "model_1: Unit operation `uo_2` updated",
+                           "model_1: Unit operation `uo_3` updated"])
         recalculated.clear()
         self.rtd_model.recalculate(1, callback_fnc)
         self.assertEqual(recalculated, [1, 2])
-        self.assert_print(["Unit operation `uo_2` updated",
-                           "Unit operation `uo_3` updated"])
+        self.assert_print(["model_1: Unit operation `uo_2` updated",
+                           "model_1: Unit operation `uo_3` updated"])
 
         # no callback
         recalculated.clear()
@@ -1232,10 +1231,10 @@ class TestRtdModelAndUserInterface(unittest.TestCase):
 
     def test_notify_updated(self):
         self.rtd_model.recalculate(-1)
-        self.assert_print(["Inlet profile updated",
-                           "Unit operation `uo_1` updated",
-                           "Unit operation `uo_2` updated",
-                           "Unit operation `uo_3` updated"])
+        self.assert_print(["model_1: Inlet profile updated",
+                           "model_1: Unit operation `uo_1` updated",
+                           "model_1: Unit operation `uo_2` updated",
+                           "model_1: Unit operation `uo_3` updated"])
 
         data_tree = self.logger.get_data_tree(self.title)
 

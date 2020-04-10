@@ -4,7 +4,7 @@ residence time distributions (RTD)
 of integrated continuous biomanufacturing processes.
 
 ## Version
-Current version: 0.7
+Current version: 0.7.1
 
 ## Requirements
 
@@ -49,11 +49,11 @@ or
     
     python bokeh serve examples/models/integrated_mab_gui.py
 
-For more information see the [Documentation](https://bio-rtd.readthedocs.io/).
+For more information see the [Documentation](https://open-biotech.github.io/bio-rtd-docs/).
 
 ## Documentation
 
-The documentation can be accessed at https://bio-rtd.readthedocs.io/ or by building a local version.
+The documentation can be accessed at https://open-biotech.github.io/bio-rtd-docs/ or by building a local version.
 
 To build a local version of documentation install the following packages:
 
@@ -74,7 +74,7 @@ For technical issues, bug reports and feature request use
 [issue tracker](https://github.com/open-biotech/bio-rtd/issues).
 
 If you want to contribute to the code, see
-[Developers guide](https://bio-rtd.readthedocs.io/en/latest/user_guide/development.html).
+[Developers guide](https://open-biotech.github.io/bio-rtd-docs/user_guide/development.html).
 
 If you are using the library in your projects please let 
 [us know](mailto:jure.sencar@boku.ac.at).

@@ -22,12 +22,12 @@ class TestDilution(unittest.TestCase):
         )
         self.uo.log = TestLogger()
 
+    # noinspection DuplicatedCode
     def test_init(self):
         # assert proper dilution ratio ( > 1)
         with self.assertRaises(AssertionError):
             fc_uo.Dilution(self.t, 0.99, self.uo_id)
-        with self.assertRaises(AssertionError):
-            fc_uo.Dilution(self.t, 1, self.uo_id)
+        fc_uo.Dilution(self.t, 1, self.uo_id)
         fc_uo.Dilution(self.t, 1.01, self.uo_id)
 
         # assert bindings
@@ -711,7 +711,7 @@ class TestFlowThroughWithSwitching(unittest.TestCase):
             self.uo._calc_t_cycle()
             self.assertEqual(self.uo.v_cycle / self.uo._f.max(), self.uo._t_cycle)
 
-    def test_sim_piece_wise_convolution(self):
+    def test_sim_piece_wise_time_convolution(self):
         # prepare
         self.uo._c_init = np.array([[0.4], [0.7]])
         self.uo._v_void = 11.4
@@ -720,24 +720,24 @@ class TestFlowThroughWithSwitching(unittest.TestCase):
         self.uo._t_cycle = 35.5
 
         # assert non-missing parameters
-        self.assert_defined_values("_v_void", self.uo._sim_piece_wise_convolution)
-        self.assert_defined_values("_c_init", self.uo._sim_piece_wise_convolution)
-        self.assert_defined_values("_p", self.uo._sim_piece_wise_convolution)
-        self.assert_defined_values("_t_cycle", self.uo._sim_piece_wise_convolution)
+        self.assert_defined_values("_v_void", self.uo._sim_piece_wise_time_convolution)
+        self.assert_defined_values("_c_init", self.uo._sim_piece_wise_time_convolution)
+        self.assert_defined_values("_p", self.uo._sim_piece_wise_time_convolution)
+        self.assert_defined_values("_t_cycle", self.uo._sim_piece_wise_time_convolution)
         # assert box shaped flow
         self.uo._f[:30] = 0.98
         with self.assertRaises(AssertionError):
-            self.uo._sim_piece_wise_convolution()
+            self.uo._sim_piece_wise_time_convolution()
         self.uo._f[:30] = 0
 
         # target
         f_target = self.uo._f.copy()
-        c_target = convolution.piece_wise_conv_with_init_state(
+        c_target = convolution.piece_wise_time_conv(
             self.t[1], f_in=self.uo._f, c_in=self.uo._c,
             t_cycle=self.uo._t_cycle, rt_mean=self.uo._v_void / self.uo._f.max(),
             rtd=self.uo._p, c_wash=self.uo._c_init, logger=self.uo.log
         )
-        self.uo._sim_piece_wise_convolution()
+        self.uo._sim_piece_wise_time_convolution()
         # check results
         np.testing.assert_array_almost_equal(f_target, self.uo._f)
         np.testing.assert_array_almost_equal(c_target, self.uo._c)
@@ -745,7 +745,7 @@ class TestFlowThroughWithSwitching(unittest.TestCase):
         # make sure logger is passed to convolution function
         self.uo._p = np.array([])
         with self.assertWarns(Warning):
-            self.uo._sim_piece_wise_convolution()
+            self.uo._sim_piece_wise_time_convolution()
 
     def test_calculate(self):
         # prepare

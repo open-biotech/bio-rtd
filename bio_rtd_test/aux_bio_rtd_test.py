@@ -29,5 +29,6 @@ class EmptyLogger(logger.RtdLogger):
     def log(self, level: int, msg: str):
         pass
 
-    def _on_data_stored(self, level: int, tree: dict, key: str, value: any):  # pragma: no cover
+    def _on_data_stored(self, level: int, tree: dict,
+                        key: str, value: any):  # pragma: no cover
         pass

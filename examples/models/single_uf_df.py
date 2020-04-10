@@ -1,10 +1,11 @@
 """Modeling UFDF
 
 We will describe uf-df with a combination of three unit operations:
- 1. `Concentration`
- 2. `BufferExchange`
- 3. `FlowThrough`
-    (for describing residence time distribution of the product)
+
+1. `Concentration`
+2. `BufferExchange`
+3. `FlowThrough`
+   (for describing residence time distribution of the product)
 
 All three unit operations will be joined into single `ComboUO`.
 
@@ -62,7 +63,7 @@ c = np.zeros([3, t.size])
 # We choose protein as a 1st specie and set inlet concentration to 14 mg/ml.
 c[0] = 14  # mg/ml
 # We 'label' a part of the product and treat is as separate specie.
-c[1, 300:600] = 14
+c[1, 200:400] = 14
 # Last component represent salt that we try to remove from the process fluid.
 c[2] = 1000  # mM
 
@@ -72,6 +73,8 @@ buffer_exchange.non_retained_species = [2]
 
 # Evaluate ( = run simulation).
 f_out, c_out = uf_df.evaluate(f, c)
+
+# ## FIGURES ##
 
 # Plot results.
 p1 = figure(plot_width=690, plot_height=350, title="UfDf",
@@ -101,26 +104,26 @@ p1.line(t, c_out[1],
         line_width=2, color='red', line_dash='dashed',
         legend_label='c_out, protein, labeled [mg/mL]')
 p1.y_range.start = 0
-p1.y_range.end = max(c[0:1].max(), c_out[0:1].max()) * 1.25
+p1.y_range.end = max(c[0:1].max(), c_out[0:1].max()) * 1.5
 p1.legend.location = "center_right"
 
 # Plot results.
 p2 = figure(plot_width=690, plot_height=350, title="UfDf",
             x_axis_label="t [min]", y_axis_label="c [mM]")
 # Add new axis for flow rate to the right.
-p2.extra_y_ranges = {'f': Range1d(0, max(f.max(), f_out.max()) * 1.1)}
+p2.extra_y_ranges = {'f': Range1d(0, max(f.max(), f_out.max()) * 1.5)}
 p2.add_layout(LinearAxis(y_range_name='f'), 'right')
 p2.yaxis[1].axis_label = "f [mL/min]"
 # Salt conc and flow rate.
-p2.line(t, c[2], line_width=2, color='navy',
+p2.line(t, c[2], line_width=2, color='green',
         legend_label='c_in, salt [mM]')
 p2.line(t, f,
-        y_range_name='f', line_width=1, color='black',
+        y_range_name='f', line_width=2, color='black',
         legend_label='f_in')
-p2.line(t, c_out[2], line_width=2, color='navy', line_dash='dashed',
+p2.line(t, c_out[2], line_width=2, color='green', line_dash='dashed',
         legend_label='c_out, salt [mM]')
 p2.line(t, f_out,
-        y_range_name='f', line_width=1, color='black',
+        y_range_name='f', line_width=2, color='black',
         line_dash='dashed', legend_label='f_out')
 p2.legend.location = "center_right"
 

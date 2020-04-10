@@ -1,5 +1,6 @@
 bio\_rtd.uo.special\_uo
 =======================
+.. automodule:: bio_rtd.uo.special_uo
 
 ComboUO
 -------

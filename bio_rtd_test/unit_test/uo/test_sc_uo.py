@@ -5,63 +5,63 @@ import numpy as np
 import scipy.interpolate as sc_interp
 from bio_rtd import pdf, utils, chromatography
 from bio_rtd.uo import sc_uo
-from bio_rtd_test.aux_bio_rtd_test import TestLogger
+from bio_rtd_test.aux_bio_rtd_test import TestLogger, EmptyLogger
 
 
 def set_ac_parameters(ac: sc_uo.AlternatingChromatography):
-    """ Set CV """
+    """Set CV."""
     ac.cv = 14.5
 
-    """ Define one """
+    """Define one."""
     ac.load_cv = 30  # preferred
     # ac.load_c_end_ss = -1
     # ac.load_c_end_relative_ss = -1
-    # ac.load_c_end_estimate_iterative_solver = -1  # takes longer to calc load_cv but is more precise
+    # ac.load_c_end_estimate_iterative_solver = -1
 
-    """ Optional """
+    """Optional."""
     ac.load_extend_first_cycle = False
     ac.load_extend_first_cycle_cv = -1
 
-    """ Values are added if both defined """
+    """Values are added if both defined."""
     ac.wash_cv = 3
     # ac.wash_t = -1
 
-    """ Define one """
+    """Define one."""
     # ac.wash_f = -1
     ac.wash_f_rel = 1  # relative to the load flow rate
 
-    """ Values are added if both defined """
+    """Values are added if both defined."""
     ac.elution_cv = 12
     # ac.elution_t = -1
 
-    """ Define one """
+    """Define one."""
     # ac.elution_f = -1
     ac.elution_f_rel = 1  # relative to the load flow rate
 
-    """ If empty -> values are 0"""
+    """If empty -> values are 0."""
     ac.elution_buffer_c = np.array([0])
 
-    """ Define one; The value corresponds to 1st moment (and not necessarily peak max)"""
+    """Define one; The value corresponds to 1st moment."""
     ac.elution_peak_position_cv = 1.2
     # ac.elution_peak_position_t = -1
 
-    """ Define one"""
+    """Define one."""
     # ac.elution_peak_cut_start_t = -1
     # ac.elution_peak_cut_start_cv = -1
     # ac.elution_peak_cut_start_c_rel_to_peak_max = -1
     ac.elution_peak_cut_start_peak_area_share = 0.05
 
-    """ Define one"""
+    """Define one."""
     # ac.elution_peak_cut_end_t = -1
     # ac.elution_peak_cut_end_cv = -1
     # ac.elution_peak_cut_end_c_rel_to_peak_max = -1
     ac.elution_peak_cut_end_peak_area_share = 0.10
 
-    """ Values are added if both defined """
+    """Values are added if both defined."""
     ac.regeneration_cv = -1
     ac.regeneration_t = -1
 
-    """ Define one"""
+    """Define one."""
     ac.regeneration_f = -1
     ac.regeneration_f_rel = 1  # relative to the load flow rate
 
@@ -104,6 +104,8 @@ def prep_for_calc_cycle_t(t, ac: sc_uo.AlternatingChromatography):
     # define leftover propagation dynamics
     ac.column_porosity_retentate = 0.64
     ac.load_recycle_pdf = get_pdf_gaussian_fixed_dispersion(t, 10)
+    # Turn off logger for pdf.
+    ac.load_recycle_pdf.log = EmptyLogger()
     # define flow switch criteria
     ac.load_c_end_relative_ss = 0.7
     # turn off high sensitive solver by default
@@ -114,7 +116,8 @@ class TestAlternatingChromatography(unittest.TestCase):
 
     def assert_defined_value(self, par_name, func, *args):
         v = getattr(self.uo, par_name)
-        setattr(self.uo, par_name, -1 if isinstance(v, numbers.Number) else None)
+        setattr(self.uo, par_name,
+                -1 if isinstance(v, numbers.Number) else None)
         with self.assertRaises(AssertionError):
             func(*args)
         setattr(self.uo, par_name, v)
@@ -125,15 +128,19 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo = sc_uo.AlternatingChromatography(
             t=self.t,
             uo_id="AlternatingChromatography_Test",
-            load_bt=get_bt_constant_pattern_solution(self.dt, dbc_100=240, k=0.2),
-            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=100)
+            load_bt=get_bt_constant_pattern_solution(self.dt,
+                                                     dbc_100=240,
+                                                     k=0.2),
+            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(
+                self.t,
+                dispersion_index=100)
         )
 
-        """ Set logger (optional) """
+        """Set logger (optional) """
         self.log = TestLogger()
         self.uo.log = self.log
 
-        """ Set other parameters """
+        """Set other parameters """
         set_ac_parameters(self.uo)
 
     def test_get_flow_value(self):
@@ -142,15 +149,21 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._load_f = load_f
         # make sure it sends warnings and returns load_f if f < 0 and f_rel < 0
         with self.assertWarns(Warning):
-            self.assertEqual(self.uo._get_flow_value("", "", -1, -1), load_f)
+            self.assertEqual(self.uo._get_flow_value("", "", -1, -1),
+                             load_f)
         with self.assertWarns(Warning):
-            self.assertEqual(self.uo._get_flow_value("", "", 0, 0), load_f)
+            self.assertEqual(self.uo._get_flow_value("", "", 0, 0),
+                             load_f)
         # make sure it returns f
-        self.assertEqual(self.uo._get_flow_value("", "", 0.15, -1), 0.15)
-        self.assertEqual(self.uo._get_flow_value("", "", 12.15, 1), 12.15)
+        self.assertEqual(self.uo._get_flow_value("", "", 0.15, -1),
+                         0.15)
+        self.assertEqual(self.uo._get_flow_value("", "", 12.15, 1),
+                         12.15)
         # make sure it returns rf * load_f
-        self.assertEqual(self.uo._get_flow_value("", "", 0, 0.02), 0.02 * load_f)
-        self.assertEqual(self.uo._get_flow_value("", "", -1, 2.02), 2.02 * load_f)
+        self.assertEqual(self.uo._get_flow_value("", "", 0, 0.02),
+                         0.02 * load_f)
+        self.assertEqual(self.uo._get_flow_value("", "", -1, 2.02),
+                         2.02 * load_f)
 
     def test_get_time_value(self):
         # make sure it sends warnings and returns load_f if f < 0 and f_rel < 0
@@ -168,8 +181,10 @@ class TestAlternatingChromatography(unittest.TestCase):
         # make sure it returns CV
         cv = 10
         self.uo._cv = cv
-        self.assertEqual(self.uo._get_time_value("", "", 0, 0.02, 4), 0.02 * cv / 4)
-        self.assertEqual(self.uo._get_time_value("", "", -1, 2.02, 3), 2.02 * cv / 3)
+        self.assertEqual(self.uo._get_time_value("", "", 0, 0.02, 4),
+                         0.02 * cv / 4)
+        self.assertEqual(self.uo._get_time_value("", "", -1, 2.02, 3),
+                         2.02 * cv / 3)
 
     def test_assert_non_binding_species(self):
         self.uo._n_species = 1
@@ -355,9 +370,11 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo.elution_f_rel = 0.5
         self.uo._load_f = 1.7
         self.uo._calc_elution_t_and_f()
-        self.assertEqual(self.uo.elution_f_rel * self.uo._load_f, self.uo._elution_f)
+        self.assertEqual(self.uo.elution_f_rel * self.uo._load_f,
+                         self.uo._elution_f)
         self.assertEqual(
-            self.uo.elution_t + self.uo.elution_cv * self.uo._cv / self.uo._elution_f,
+            self.uo.elution_t + self.uo.elution_cv * self.uo._cv
+            / self.uo._elution_f,
             self.uo._elution_t
         )
 
@@ -368,7 +385,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo.elution_peak_position_cv = -1
         self.uo._elution_f = -1
         self.uo._calc_elution_peak_t()
-        self.assertEqual(self.uo.elution_peak_position_t, self.uo._elution_peak_t)
+        self.assertEqual(self.uo.elution_peak_position_t,
+                         self.uo._elution_peak_t)
 
         self.uo.elution_peak_position_t = 1.2
         self.uo.elution_peak_position_cv = 0.6
@@ -377,7 +395,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._calc_elution_peak_t()
         self.assertEqual(
             self.uo.elution_peak_position_t +
-            self.uo.elution_peak_position_cv * self.uo._cv / self.uo._elution_f,
+            self.uo.elution_peak_position_cv * self.uo._cv
+            / self.uo._elution_f,
             self.uo._elution_peak_t
         )
 
@@ -387,15 +406,19 @@ class TestAlternatingChromatography(unittest.TestCase):
         dbc_100 = 35
         k = 0.0022
 
-        btc = get_bt_constant_pattern_solution(self.dt, dbc_100=dbc_100, k=k)
-        self.uo.load_bt = get_bt_constant_pattern_solution(self.dt, dbc_100=dbc_100, k=k)
+        btc = get_bt_constant_pattern_solution(self.dt,
+                                               dbc_100=dbc_100,
+                                               k=k)
+        self.uo.load_bt = get_bt_constant_pattern_solution(self.dt,
+                                                           dbc_100=dbc_100,
+                                                           k=k)
 
         self.uo._cv = 27
         btc.update_btc_parameters(cv=self.uo._cv)
-        self.assertNotEqual(btc.cv, self.uo.load_bt.cv)
+        self.assertNotEqual(btc._cv, self.uo.load_bt._cv)
 
         self.uo._update_load_btc()
-        self.assertEqual(btc.cv, self.uo.load_bt.cv)
+        self.assertEqual(btc._cv, self.uo.load_bt._cv)
 
     def test_update_elution_peak_pdf(self):
         # prepare
@@ -409,6 +432,7 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.assert_defined_value('_elution_f',
                                   self.uo._update_elution_peak_pdf)
 
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._update_elution_peak_pdf()
 
         np.testing.assert_array_equal(
@@ -441,6 +465,7 @@ class TestAlternatingChromatography(unittest.TestCase):
 
         # prepare
         self.uo._elution_peak_t = 5
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo.elution_peak_shape.update_pdf(rt_mean=self.uo._elution_peak_t)
         self.uo._p_elution_peak = self.uo.elution_peak_shape.get_p()
         peak_pdf = self.uo._p_elution_peak.copy()
@@ -495,20 +520,23 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._cv = 26
         reset_peak_cut_start()
         self.uo.elution_peak_cut_start_cv = 2
-        i_start_target = int(self.uo._cv * self.uo.elution_peak_cut_start_cv / f_elution / self.dt)
+        i_start_target = int(self.uo._cv * self.uo.elution_peak_cut_start_cv
+                             / f_elution / self.dt)
         run_and_assert(i_start_target, i_end_target)
         # start (peak area share)
         reset_peak_cut_start()
         self.uo.elution_peak_cut_start_peak_area_share = 0.05
         i_start_target = utils.vectors.true_start(
-            np.cumsum(peak_pdf * self.dt) >= self.uo.elution_peak_cut_start_peak_area_share
+            np.cumsum(peak_pdf * self.dt)
+            >= self.uo.elution_peak_cut_start_peak_area_share
         )
         run_and_assert(i_start_target, i_end_target)
         # start (c relative to peak max)
         reset_peak_cut_start()
         self.uo.elution_peak_cut_start_c_rel_to_peak_max = 0.15
         i_start_target = utils.vectors.true_start(
-            peak_pdf >= peak_pdf.max() * self.uo.elution_peak_cut_start_c_rel_to_peak_max
+            peak_pdf >= peak_pdf.max()
+            * self.uo.elution_peak_cut_start_c_rel_to_peak_max
         )
         run_and_assert(i_start_target, i_end_target)
 
@@ -532,25 +560,29 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._cv = 24
         reset_peak_cut_end()
         self.uo.elution_peak_cut_end_cv = 2.3
-        i_end_target = int(self.uo._cv * self.uo.elution_peak_cut_end_cv / f_elution / self.dt)
+        i_end_target = int(self.uo._cv * self.uo.elution_peak_cut_end_cv
+                           / f_elution / self.dt)
         with self.assertWarns(Warning):
             run_and_assert(i_start_target, i_end_target)
         # end (CV)
         self.uo.elution_peak_cut_end_cv = 23
-        i_end_target = int(self.uo._cv * self.uo.elution_peak_cut_end_cv / f_elution / self.dt)
+        i_end_target = int(self.uo._cv * self.uo.elution_peak_cut_end_cv
+                           / f_elution / self.dt)
         run_and_assert(i_start_target, i_end_target)
         # end (peak area share)
         reset_peak_cut_end()
         self.uo.elution_peak_cut_end_peak_area_share = 0.07
         i_end_target = utils.vectors.true_start(
-            np.cumsum(peak_pdf * self.dt) >= (1 - self.uo.elution_peak_cut_end_peak_area_share)
+            np.cumsum(peak_pdf * self.dt)
+            >= (1 - self.uo.elution_peak_cut_end_peak_area_share)
         )
         run_and_assert(i_start_target, i_end_target)
         # end (c relative to peak max)
         reset_peak_cut_end()
         self.uo.elution_peak_cut_end_c_rel_to_peak_max = 0.12
         i_end_target = utils.vectors.true_end(
-            peak_pdf >= peak_pdf.max() * self.uo.elution_peak_cut_end_c_rel_to_peak_max
+            peak_pdf
+            >= peak_pdf.max() * self.uo.elution_peak_cut_end_c_rel_to_peak_max
         )
         run_and_assert(i_start_target, i_end_target)
         self.uo._elution_t = i_end_target * self.dt - self.dt
@@ -561,7 +593,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._elution_peak_t = 15.2
         self.uo._elution_f = 1.5
         self.uo._elution_t = 45.34
-        peak_mask = np.ones(int(round(self.uo._elution_t / self.dt)), dtype=bool)
+        peak_mask = np.ones(int(round(self.uo._elution_t / self.dt)),
+                            dtype=bool)
         self.uo._elution_peak_cut_start_i = 10
         self.uo._elution_peak_cut_end_i = peak_mask.size - 100
         peak_mask[:self.uo._elution_peak_cut_start_i] = False
@@ -571,11 +604,17 @@ class TestAlternatingChromatography(unittest.TestCase):
 
     def test_update_elution_peak_pdf_2(self):
         dispersion_index = 30
-        ep_shape = get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=dispersion_index)
+        ep_shape = get_pdf_gaussian_fixed_dispersion(
+            self.t,
+            dispersion_index=dispersion_index)
+        ep_shape.log = EmptyLogger()
         # make sure it calls `elution_peak_shape.update_pdf`
         self.uo._elution_peak_t = 15.2
         self.uo._elution_f = 1.5
-        self.uo.elution_peak_shape = get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=dispersion_index)
+        self.uo.elution_peak_shape = get_pdf_gaussian_fixed_dispersion(
+            self.t,
+            dispersion_index=dispersion_index)
+        self.uo.elution_peak_shape.log = EmptyLogger()
         ep_shape.update_pdf(
             v_void=self.uo._elution_peak_t * self.uo._elution_f,
             f=self.uo._elution_f,
@@ -585,8 +624,10 @@ class TestAlternatingChromatography(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.uo.elution_peak_shape.get_p()
         self.uo._update_elution_peak_pdf()
-        np.testing.assert_array_equal(ep_shape.get_p(), self.uo.elution_peak_shape.get_p())
-        np.testing.assert_array_equal(ep_shape.get_p(), self.uo._p_elution_peak)
+        np.testing.assert_array_equal(ep_shape.get_p(),
+                                      self.uo.elution_peak_shape.get_p())
+        np.testing.assert_array_equal(ep_shape.get_p(),
+                                      self.uo._p_elution_peak)
 
     # noinspection DuplicatedCode
     def test_calc_regeneration_t(self):
@@ -680,25 +721,26 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._cv = 0.15
         self.uo._calc_load_recycle_wash_i()
         i_target = int((self.uo.wash_recycle_duration_t +
-                        self.uo.wash_recycle_duration_cv * self.uo._cv / self.uo._wash_f
+                        self.uo.wash_recycle_duration_cv * self.uo._cv
+                        / self.uo._wash_f
                         ) / self.dt)
         self.assertEqual(i_target, self.uo._wash_recycle_i_duration)
 
-    def test_get_load_bt_cycle_switch_limit(self):
+    def test_get_load_bt_cycle_switch_criteria(self):
         self.uo.load_c_end_ss = None
         self.uo.load_c_end_relative_ss = -1
         load_c_ss = np.array([[1.3], [2.2]])
 
         # assertion
         with self.assertRaises(AssertionError):
-            self.uo._get_load_bt_cycle_switch_limit(load_c_ss)
+            self.uo._get_load_bt_cycle_switch_criteria(load_c_ss)
 
         # warning (specify both)
         self.uo.load_c_end_ss = np.array([[3.9], [9.02]])
         self.uo.load_c_end_relative_ss = 0.6
         with self.assertWarns(Warning):
             np.testing.assert_array_equal(
-                self.uo._get_load_bt_cycle_switch_limit(load_c_ss),
+                self.uo._get_load_bt_cycle_switch_criteria(load_c_ss),
                 self.uo.load_c_end_ss
             )
 
@@ -706,23 +748,26 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo.load_c_end_relative_ss = -1
         load_c_end_ss = np.array([[3.7], [8.7]])
         self.uo.load_c_end_ss = load_c_end_ss.copy()
-        np.testing.assert_array_equal(self.uo._get_load_bt_cycle_switch_limit(load_c_ss), load_c_end_ss)
+        np.testing.assert_array_equal(
+            self.uo._get_load_bt_cycle_switch_criteria(load_c_ss),
+            load_c_end_ss)
 
         # specify conc ratio
         self.uo.load_c_end_ss = None
         load_c_end_relative_ss = 0.3
         self.uo.load_c_end_relative_ss = load_c_end_relative_ss
         np.testing.assert_array_almost_equal(
-            self.uo._get_load_bt_cycle_switch_limit(load_c_ss),
+            self.uo._get_load_bt_cycle_switch_criteria(load_c_ss),
             load_c_end_relative_ss * load_c_ss
         )
 
     # noinspection DuplicatedCode
     def test_calc_cycle_t(self):
-        """
-        This test depends on `_sim_c_wash_desorption` and  `_sim_c_recycle_propagation`.
+        """This test depends on `_sim_c_wash_desorption` and
+        `_sim_c_recycle_propagation`.
 
-        This is unlike other tests that depend only on functions tested above the test.
+        This is unlike other tests that depend only on functions tested
+        above the test.
         """
 
         self.uo._cv = 14.3
@@ -741,7 +786,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo.load_cv = 2.3
         self.assertFalse(hasattr(self.uo, "_cycle_t"))
         self.uo._calc_cycle_t()
-        self.assertEqual(self.uo._cycle_t, self.uo.load_cv * self.uo._cv / self.uo._load_f)
+        self.assertEqual(self.uo._cycle_t,
+                         self.uo.load_cv * self.uo._cv / self.uo._load_f)
         # warn if defined in multiple ways
         self.uo.load_c_end_ss = np.array([[1], [0.5]])
         with self.assertWarns(Warning):
@@ -763,9 +809,9 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.uo._calc_cycle_t()
 
             # steady state conc estimation
-            binding_species = [i for i in range(self.uo._n_species)
-                               if i not in self.uo.non_binding_species]
-            load_c_ss = self.uo._estimate_steady_state_mean_c(binding_species)
+            _binding_species = [i for i in range(self.uo._n_species)
+                                if i not in self.uo.non_binding_species]
+            load_c_ss = self.uo._estimate_steady_state_mean_c(_binding_species)
             np.testing.assert_array_almost_equal(
                 self.log.get_data_tree(self.uo.uo_id)['load_c_ss'], load_c_ss
             )
@@ -776,8 +822,8 @@ class TestAlternatingChromatography(unittest.TestCase):
             else:
                 load_c_end_ss = self.uo.load_c_end_relative_ss * load_c_ss
             np.testing.assert_array_almost_equal(
-                self.log.get_data_tree(self.uo.uo_id)['load_c_end_ss'], load_c_end_ss
-            )
+                self.log.get_data_tree(self.uo.uo_id)['load_c_end_ss'],
+                load_c_end_ss)
 
             # cycle duration
             self.assertAlmostEqual(self.uo._cycle_t, cycle_t, 2)
@@ -819,6 +865,7 @@ class TestAlternatingChromatography(unittest.TestCase):
             run_test(390.5195)
 
         self.uo.load_recycle_pdf = get_pdf_gaussian_fixed_dispersion(self.t, 1)
+        self.uo.load_recycle_pdf.log = EmptyLogger()
 
         with self.assertWarns(Warning):
 
@@ -856,7 +903,7 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.uo.load_c_end_estimate_with_iterative_solver = True
             run_test(390.0195)
 
-            self.uo.load_c_end_estimate_with_iterative_solver_max_iter = 1
+            self.uo.load_c_end_estimate_with_iter_solver_max_iter = 1
             with self.assertWarns(Warning):
                 self.uo._calc_cycle_t()
 
@@ -866,7 +913,8 @@ class TestAlternatingChromatography(unittest.TestCase):
             binding_species = [i for i in range(self.uo._n_species)
                                if i not in self.uo.non_binding_species]
             _load_c_ss = self.uo._estimate_steady_state_mean_c(binding_species)
-            self.uo.load_c_end_ss = _load_c_ss.copy() * self.uo.load_c_end_relative_ss
+            self.uo.load_c_end_ss = \
+                _load_c_ss.copy() * self.uo.load_c_end_relative_ss
             self.uo.load_c_end_relative_ss = -1
             run_test(390.012)
             # test scrambled values
@@ -926,7 +974,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._cv = 2.7
         self.uo._load_f = 4.3
         # results
-        t_target = self.uo.load_extend_first_cycle_cv * self.uo._cv / self.uo._load_f
+        t_target = \
+            self.uo.load_extend_first_cycle_cv * self.uo._cv / self.uo._load_f
         self.uo._calc_first_cycle_extension_t()
         self.assertEqual(self.uo._first_cycle_extension_t, t_target)
         self.uo.load_extend_first_cycle_cv = -1
@@ -969,7 +1018,9 @@ class TestAlternatingChromatography(unittest.TestCase):
         def test_delay(t_delay):
             with self.assertWarns(Warning):
                 self.uo._calc_first_cycle_extension_t()
-            self.assertAlmostEqual(self.uo._first_cycle_extension_t, t_delay, 2)
+            self.assertAlmostEqual(self.uo._first_cycle_extension_t,
+                                   t_delay,
+                                   2)
 
         # test delays
         self.uo.load_recycle = True
@@ -991,11 +1042,15 @@ class TestAlternatingChromatography(unittest.TestCase):
         f_end_i = f.size - 100
         f[:f_start_i] = 0
         f[f_end_i + 1:] = 0
-        cycle_start_t_list = np.arange(self.t[f_start_i], self.t[f_end_i - 1], self.uo._cycle_t)
-        cycle_start_i_list_target = np.rint(cycle_start_t_list / self.dt).astype(np.int32)
+        cycle_start_t_list = np.arange(self.t[f_start_i],
+                                       self.t[f_end_i - 1],
+                                       self.uo._cycle_t)
+        cycle_start_i_list_target = \
+            np.rint(cycle_start_t_list / self.dt).astype(np.int32)
         self.uo._f = f
         self.uo._calc_cycle_start_i_list()
-        np.testing.assert_array_equal(cycle_start_i_list_target, self.uo._cycle_start_i_list)
+        np.testing.assert_array_equal(cycle_start_i_list_target,
+                                      self.uo._cycle_start_i_list)
 
         # with prolong of first cycle
         self.uo.load_extend_first_cycle = True
@@ -1004,7 +1059,9 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.uo._calc_cycle_start_i_list()
 
         def test_with_delay():
-            t_list = np.arange(self.t[f_start_i] + dt, self.t[f_end_i - 1], self.uo._cycle_t)
+            t_list = np.arange(self.t[f_start_i] + dt,
+                               self.t[f_end_i - 1],
+                               self.uo._cycle_t)
             t_list[0] = self.t[f_start_i]
             i_list = np.rint(t_list / self.dt).astype(np.int32)
             self.uo._calc_first_cycle_extension_t()
@@ -1031,7 +1088,8 @@ class TestAlternatingChromatography(unittest.TestCase):
             test_with_delay()
 
     def test_prepare_simulation(self):
-        # individual parts are already tested, so here we want to ensure that they are called and in right order
+        # Individual parts are already tested, so here we want to ensure
+        # that they are called and in right order.
         def ensure_parameters():
             self.assertTrue(self.uo._n_species > 0)
             self.assertTrue(
@@ -1049,7 +1107,8 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.assertTrue(self.uo._elution_peak_cut_start_i >= 0)
             self.assertTrue(self.uo._elution_peak_cut_end_i > 0)
             self.assertTrue(self.uo._elution_peak_mask.size > 0)
-            self.assertTrue(self.uo.load_bt.cv > 0)
+            # noinspection PyUnresolvedReferences
+            self.assertTrue(self.uo.load_bt._cv > 0)
             self.assertTrue(self.uo._cycle_t > 0)
             self.assertTrue(self.uo._cycle_start_i_list.size > 0)
             if self.uo.load_recycle and self.uo.wash_recycle:
@@ -1065,11 +1124,14 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.uo.load_extend_first_cycle = False
             self.uo._n_species = n_species
             self.uo.load_recycle = True
-            self.uo.load_recycle_pdf = get_pdf_gaussian_fixed_relative_width(self.t)
+            self.uo.load_recycle_pdf = \
+                get_pdf_gaussian_fixed_relative_width(self.t)
+            self.uo.load_recycle_pdf.log = EmptyLogger()
             self.uo.column_porosity_retentate = 0.84
             self.uo.wash_recycle = True
             self.uo.wash_recycle_duration_t = 1.2
             self.uo.load_target_lin_velocity = -1
+            self.uo.elution_peak_shape.log = EmptyLogger()
             self.uo._prepare_simulation()
             ensure_parameters()
 
@@ -1095,7 +1157,8 @@ class TestAlternatingChromatography(unittest.TestCase):
                 self.uo._prepare_simulation()
             self.uo.load_extend_first_cycle = False
 
-            # cycle length wrong (load to short compare to the rest of the process)
+            # Cycle length wrong
+            # (load to short compare to the rest of the process)
             self.uo.regeneration_cv = 100
             with self.assertRaises(RuntimeError):
                 self.uo._prepare_simulation()
@@ -1122,7 +1185,8 @@ class TestAlternatingChromatography(unittest.TestCase):
         c_bound_target = self.uo.load_bt.calc_c_bound(f_load, c_load)
         c_bound, c_unbound = self.uo._sim_c_load_binding(f_load, c_load)
         np.testing.assert_array_almost_equal(c_bound_target, c_bound)
-        np.testing.assert_array_almost_equal(c_load - c_bound_target, c_unbound)
+        np.testing.assert_array_almost_equal(c_load - c_bound_target,
+                                             c_unbound)
 
     def test_sim_c_wash_desorption(self):
         with self.assertRaises(NotImplementedError):
@@ -1130,8 +1194,10 @@ class TestAlternatingChromatography(unittest.TestCase):
 
     def test_sim_c_recycle_propagation(self):
         # pre-requirements
-        load_recycle_pdf = get_pdf_gaussian_fixed_relative_width(self.t, )
-        self.uo.load_recycle_pdf = get_pdf_gaussian_fixed_relative_width(self.t, )
+        load_recycle_pdf = \
+            get_pdf_gaussian_fixed_relative_width(self.t)
+        self.uo.load_recycle_pdf = \
+            get_pdf_gaussian_fixed_relative_width(self.t)
         self.uo._cv = 13.44
         self.uo.column_porosity_retentate = 0.64
         v_void = self.uo._cv * self.uo.column_porosity_retentate
@@ -1153,23 +1219,47 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._wash_t = wash_t
 
         # test assertions
-        self.assert_defined_value("_wash_f", self.uo._sim_c_recycle_propagation, f_load, c_load_unbound, None)
-        self.assert_defined_value("_wash_t", self.uo._sim_c_recycle_propagation, f_load, c_load_unbound, None)
-        self.assert_defined_value("load_recycle_pdf", self.uo._sim_c_recycle_propagation, f_load, c_load_unbound, None)
+        self.assert_defined_value("_wash_f",
+                                  self.uo._sim_c_recycle_propagation,
+                                  f_load,
+                                  c_load_unbound,
+                                  None)
+        self.assert_defined_value("_wash_t",
+                                  self.uo._sim_c_recycle_propagation,
+                                  f_load,
+                                  c_load_unbound,
+                                  None)
+        self.assert_defined_value("load_recycle_pdf",
+                                  self.uo._sim_c_recycle_propagation,
+                                  f_load,
+                                  c_load_unbound,
+                                  None)
         with self.assertRaises(AssertionError):
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound[:, :140], c_wash_desorbed)
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound[:, :140],
+                                               c_wash_desorbed)
         with self.assertRaises(AssertionError):
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound[:2, :], c_wash_desorbed)
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound[:2, :],
+                                               c_wash_desorbed)
         with self.assertRaises(AssertionError):
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, c_wash_desorbed[:, :40])
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound,
+                                               c_wash_desorbed[:, :40])
         with self.assertRaises(AssertionError):
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, c_wash_desorbed[:2, :])
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound,
+                                               c_wash_desorbed[:2, :])
         with self.assertRaises(AssertionError):
-            self.uo._sim_c_recycle_propagation(f_load[:140], c_load_unbound, c_wash_desorbed)
+            self.uo._sim_c_recycle_propagation(f_load[:140],
+                                               c_load_unbound,
+                                               c_wash_desorbed)
 
         # test functionality (base)
         v_load = self.dt * f_load.cumsum()
-        v_wash = v_load[-1] + self.dt * np.arange(1, 1 + c_wash_desorbed.shape[1]) * wash_f
+        v_wash = v_load[-1] + self.dt * np.arange(1,
+                                                  1 + c_wash_desorbed.shape[1]
+                                                  ) * wash_f
         dv = min(f_load.min(), wash_f) * self.dt
         v = np.arange(dv, v_wash[-1] + dv, dv)
         c_v_combined = sc_interp.interp1d(
@@ -1179,8 +1269,13 @@ class TestAlternatingChromatography(unittest.TestCase):
         )(v)
         c_v_combined[c_v_combined < 0] = 0
         # simulate traveling of leftover material through the column
-        load_recycle_pdf.update_pdf(v_void=v_void, f=load_f, rt_mean=v_void / wash_f)
-        c_v_combined_propagated = utils.convolution.time_conv(self.dt, c_v_combined, load_recycle_pdf.get_p())
+        load_recycle_pdf.update_pdf(v_void=v_void,
+                                    f=load_f,
+                                    rt_mean=v_void / wash_f)
+        c_v_combined_propagated = \
+            utils.convolution.time_conv(self.dt,
+                                        c_v_combined,
+                                        load_recycle_pdf.get_p())
         # split back on time scale
         c_combined_propagated = sc_interp.interp1d(
             v,
@@ -1189,48 +1284,82 @@ class TestAlternatingChromatography(unittest.TestCase):
         )(np.concatenate((v_load, v_wash), axis=0))
         c_combined_propagated[c_combined_propagated < 0] = 0
         c_unbound_propagated, c_wash_desorbed_propagated = \
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, c_wash_desorbed)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, :v_load.size], c_unbound_propagated)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, v_load.size:], c_wash_desorbed_propagated)
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound,
+                                               c_wash_desorbed)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, :v_load.size],
+            c_unbound_propagated)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, v_load.size:],
+            c_wash_desorbed_propagated)
 
         # test functionality (constant flow)
         f_load[:] = wash_f
         # simulate traveling of leftover material through the column
-        load_recycle_pdf.update_pdf(v_void=v_void, f=wash_f, rt_mean=v_void / wash_f)
-        c_combined_propagated = utils.convolution.time_conv(self.dt,
-                                                            np.concatenate((c_load_unbound, c_wash_desorbed), axis=1),
-                                                            load_recycle_pdf.get_p())
+        load_recycle_pdf.update_pdf(v_void=v_void,
+                                    f=wash_f,
+                                    rt_mean=v_void / wash_f)
+        c_combined_propagated = utils.convolution.time_conv(
+            self.dt,
+            np.concatenate((c_load_unbound, c_wash_desorbed), axis=1),
+            load_recycle_pdf.get_p())
         c_unbound_propagated, c_wash_desorbed_propagated = \
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, c_wash_desorbed)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, :v_load.size], c_unbound_propagated)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, v_load.size:], c_wash_desorbed_propagated)
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound,
+                                               c_wash_desorbed)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, :v_load.size],
+            c_unbound_propagated)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, v_load.size:],
+            c_wash_desorbed_propagated)
 
         # test functionality (f_load = 2 * wash_f)
         f_load[:] = 2 * wash_f
         # simulate traveling of leftover material through the column
-        load_recycle_pdf.update_pdf(v_void=v_void, f=wash_f, rt_mean=v_void / wash_f)
-        c_combined_propagated = utils.convolution.time_conv(self.dt, np.concatenate(
-            (c_load_unbound.repeat(2, axis=1), c_wash_desorbed), axis=1), load_recycle_pdf.get_p())
+        load_recycle_pdf.update_pdf(v_void=v_void,
+                                    f=wash_f,
+                                    rt_mean=v_void / wash_f)
+        c_combined_propagated = utils.convolution.time_conv(
+            self.dt, np.concatenate(
+                (c_load_unbound.repeat(2, axis=1), c_wash_desorbed), axis=1),
+            load_recycle_pdf.get_p())
         c_unbound_propagated, c_wash_desorbed_propagated = \
-            self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, c_wash_desorbed)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, 1:v_load.size * 2:2], c_unbound_propagated)
-        np.testing.assert_array_almost_equal(c_combined_propagated[:, v_load.size * 2:], c_wash_desorbed_propagated)
+            self.uo._sim_c_recycle_propagation(f_load,
+                                               c_load_unbound,
+                                               c_wash_desorbed)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, 1:v_load.size * 2:2],
+            c_unbound_propagated)
+        np.testing.assert_array_almost_equal(
+            c_combined_propagated[:, v_load.size * 2:],
+            c_wash_desorbed_propagated)
 
         # test functionality (no wash)
         f_load[:50] = wash_f
         v_load = self.dt * f_load.cumsum()
         dv = f_load.min() * self.dt
         v = np.arange(dv, v_load[-1] + dv, dv)
-        c_v_combined = sc_interp.interp1d(v_load, c_load_unbound, fill_value="extrapolate")(v)
+        c_v_combined = sc_interp.interp1d(v_load,
+                                          c_load_unbound,
+                                          fill_value="extrapolate")(v)
         # simulate traveling of leftover material through the column
-        load_recycle_pdf.update_pdf(v_void=v_void, f=wash_f, rt_mean=v_void / wash_f)
-        c_v_combined_propagated = utils.convolution.time_conv(self.dt, c_v_combined, load_recycle_pdf.get_p())
+        load_recycle_pdf.update_pdf(v_void=v_void,
+                                    f=wash_f,
+                                    rt_mean=v_void / wash_f)
+        c_v_combined_propagated = utils.convolution.time_conv(
+            self.dt,
+            c_v_combined,
+            load_recycle_pdf.get_p())
         # split back on time scale
-        c_load_propagated = sc_interp.interp1d(v, c_v_combined_propagated, fill_value="extrapolate")(v_load)
+        c_load_propagated = sc_interp.interp1d(
+            v, c_v_combined_propagated, fill_value="extrapolate")(v_load)
         c_load_propagated[c_load_propagated < 0] = 0
         c_unbound_propagated, c_wash_desorbed_propagated = \
             self.uo._sim_c_recycle_propagation(f_load, c_load_unbound, None)
-        np.testing.assert_array_almost_equal(c_load_propagated, c_unbound_propagated)
+        np.testing.assert_array_almost_equal(c_load_propagated,
+                                             c_unbound_propagated)
         self.assertAlmostEqual(
             c_wash_desorbed_propagated.sum() * wash_f,
             ((c_load_unbound - c_load_propagated) * f_load).sum(),
@@ -1244,12 +1373,14 @@ class TestAlternatingChromatography(unittest.TestCase):
         n_steps = 102
         self.uo._n_species = 1
         self.uo.elution_buffer_c = np.array([])
-        np.testing.assert_array_equal(calc_target_outlet(np.array([0]), n_steps),
-                                      self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            calc_target_outlet(np.array([0]), n_steps),
+            self.uo._sim_c_elution_buffer(n_steps))
 
         self.uo.elution_buffer_c = np.array([3])
-        np.testing.assert_array_equal(calc_target_outlet(np.array([3]), n_steps),
-                                      self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            calc_target_outlet(np.array([3]), n_steps),
+            self.uo._sim_c_elution_buffer(n_steps))
 
         self.uo._n_species = 2
         self.uo.elution_buffer_c = np.array([3])
@@ -1257,16 +1388,19 @@ class TestAlternatingChromatography(unittest.TestCase):
             self.uo._sim_c_elution_buffer(n_steps)
 
         self.uo.elution_buffer_c = np.array([1, 3])
-        np.testing.assert_array_equal(calc_target_outlet(self.uo.elution_buffer_c, n_steps),
-                                      self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            calc_target_outlet(self.uo.elution_buffer_c, n_steps),
+            self.uo._sim_c_elution_buffer(n_steps))
 
         self.uo.elution_buffer_c = np.array([[1], [3]])
-        np.testing.assert_array_equal(calc_target_outlet(self.uo.elution_buffer_c, n_steps),
-                                      self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            calc_target_outlet(self.uo.elution_buffer_c, n_steps),
+            self.uo._sim_c_elution_buffer(n_steps))
 
         self.uo.elution_buffer_c = np.array([])
-        np.testing.assert_array_equal(calc_target_outlet(np.array([0, 0]), n_steps),
-                                      self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            calc_target_outlet(np.array([0, 0]), n_steps),
+            self.uo._sim_c_elution_buffer(n_steps))
 
         n_steps = 123
         # wrong number of species
@@ -1289,16 +1423,22 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo.elution_buffer_c = np.array([])
         self.uo._n_species = 3
         c_out = np.zeros([self.uo._n_species, n_steps])
-        np.testing.assert_array_equal(c_out, self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            c_out,
+            self.uo._sim_c_elution_buffer(n_steps))
         # array
         self.uo.elution_buffer_c = np.array([1, 3, 4])
         c_out = self.uo.elution_buffer_c[:, np.newaxis] * np.ones([1, n_steps])
-        np.testing.assert_array_equal(c_out, self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            c_out,
+            self.uo._sim_c_elution_buffer(n_steps))
         # array
         self.uo._n_species = 1
         self.uo.elution_buffer_c = np.array(3)
         c_out = np.ones([1, n_steps]) * 3
-        np.testing.assert_array_equal(c_out, self.uo._sim_c_elution_buffer(n_steps))
+        np.testing.assert_array_equal(
+            c_out,
+            self.uo._sim_c_elution_buffer(n_steps))
 
     def test_sim_c_elution_desorption(self):
         # prepare
@@ -1309,28 +1449,38 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._elution_peak_t = 15
         self.uo._elution_peak_cut_start_i = int(round(5 / self.dt))
         self.uo._elution_peak_cut_end_i = int(round(25 / self.dt))
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._update_elution_peak_pdf()
         self.uo._calc_elution_peak_mask()
         i_el_d = int(round(self.uo._elution_t / self.dt))
 
         # calc
         c_elution_target = \
-            self.uo.elution_peak_shape.get_p()[np.newaxis, :i_el_d] * m_bound[:, np.newaxis] / self.uo._elution_f
-        c_elution, mask_elution_peak = self.uo._sim_c_elution_desorption(m_bound)
-        np.testing.assert_array_equal(mask_elution_peak, self.uo._elution_peak_mask)
+            self.uo.elution_peak_shape.get_p()[np.newaxis, :i_el_d] \
+            * m_bound[:, np.newaxis] / self.uo._elution_f
+        c_elution, mask_elution_peak = \
+            self.uo._sim_c_elution_desorption(m_bound)
+        np.testing.assert_array_equal(mask_elution_peak,
+                                      self.uo._elution_peak_mask)
         np.testing.assert_array_almost_equal(c_elution, c_elution_target)
 
         # pad too short pdf
-        self.uo.elution_peak_shape = get_pdf_gaussian_fixed_relative_width(self.t, 0.002)
+        self.uo.elution_peak_shape = \
+            get_pdf_gaussian_fixed_relative_width(self.t, 0.002)
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._update_elution_peak_pdf()
-        self.assertTrue(self.uo.elution_peak_shape.get_p().size < i_el_d)  # pdf is shorter than elution duration
+        # pdf is shorter than elution duration
+        self.assertTrue(self.uo.elution_peak_shape.get_p().size < i_el_d)
         c_elution_target = np.pad(
-            self.uo.elution_peak_shape.get_p()[np.newaxis, :i_el_d] * m_bound[:, np.newaxis] / self.uo._elution_f,
+            self.uo.elution_peak_shape.get_p()[np.newaxis, :i_el_d]
+            * m_bound[:, np.newaxis] / self.uo._elution_f,
             ((0, 0), (0, i_el_d - self.uo.elution_peak_shape.get_p().size)),
             mode="constant"
         )
-        c_elution, mask_elution_peak = self.uo._sim_c_elution_desorption(m_bound)
-        np.testing.assert_array_equal(mask_elution_peak, self.uo._elution_peak_mask)
+        c_elution, mask_elution_peak = \
+            self.uo._sim_c_elution_desorption(m_bound)
+        np.testing.assert_array_equal(mask_elution_peak,
+                                      self.uo._elution_peak_mask)
         np.testing.assert_array_almost_equal(c_elution, c_elution_target)
 
     def test_sim_c_regeneration(self):
@@ -1350,12 +1500,15 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.uo._n_species = 5
         self.uo.non_binding_species = [1, 3]
         self.uo.column_porosity_retentate = 0.64
-        self.uo.load_recycle_pdf = get_pdf_gaussian_fixed_relative_width(self.t, )
+        self.uo.load_recycle_pdf = \
+            get_pdf_gaussian_fixed_relative_width(self.t)
         self.uo._update_load_recycle_pdf(self.uo._load_f)
         self.uo._elution_peak_t = 3.64
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._update_elution_peak_pdf()
         self.uo._update_load_btc()
-        self.uo._elution_peak_mask = np.zeros(int(round(self.uo._elution_t / self.dt)), dtype=bool)
+        self.uo._elution_peak_mask = \
+            np.zeros(int(round(self.uo._elution_t / self.dt)), dtype=bool)
         self.uo._elution_peak_mask[50:150] = True
 
         # definitions
@@ -1366,75 +1519,74 @@ class TestAlternatingChromatography(unittest.TestCase):
         self.log.set_data_tree("cycle_tree", self.uo._cycle_tree)
 
         # test assertions
-        self.assert_defined_value("_load_f", self.uo._sim_c_out_cycle, f_load, c_load)
-        self.assert_defined_value("_wash_f", self.uo._sim_c_out_cycle, f_load, c_load)
-        self.assert_defined_value("_wash_t", self.uo._sim_c_out_cycle, f_load, c_load)
-        self.assert_defined_value("_elution_f", self.uo._sim_c_out_cycle, f_load, c_load)
-        self.assert_defined_value("_elution_t", self.uo._sim_c_out_cycle, f_load, c_load)
-        self.assert_defined_value("_cv", self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_load_f",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_wash_f",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_wash_t",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_elution_f",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_elution_t",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
+        self.assert_defined_value("_cv",
+                                  self.uo._sim_c_out_cycle, f_load, c_load)
 
         # test functionality
         self.uo.load_recycle = True
         c_bound, c_unbound = self.uo._sim_c_load_binding(f_load, c_load)
-        c_out_load_target, c_out_wash_target = self.uo._sim_c_recycle_propagation(f_load, c_unbound, None)
+        c_out_load_target, c_out_wash_target = \
+            self.uo._sim_c_recycle_propagation(f_load, c_unbound, None)
         m_bound = (c_bound * f_load[np.newaxis, :]).sum(1) * self.dt
-        c_out_elution_target, elution_peak_mask_target = self.uo._sim_c_elution_desorption(m_bound)
+        c_out_elution_target, elution_peak_mask_target = \
+            self.uo._sim_c_elution_desorption(m_bound)
         # sim
-        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, c_out_regeneration = \
-            self.uo._sim_c_out_cycle(f_load, c_load)
+        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, \
+            c_out_regeneration = self.uo._sim_c_out_cycle(f_load, c_load)
         # assert
-        np.testing.assert_array_almost_equal(c_out_load_target, c_out_load)
-        np.testing.assert_array_almost_equal(c_out_wash_target, c_out_wash)
-        np.testing.assert_array_almost_equal(c_out_elution_target, c_out_elution)
-        np.testing.assert_array_equal(elution_peak_mask_target, elution_peak_mask)
+        np.testing.assert_array_almost_equal(c_out_load_target,
+                                             c_out_load)
+        np.testing.assert_array_almost_equal(c_out_wash_target,
+                                             c_out_wash)
+        np.testing.assert_array_almost_equal(c_out_elution_target,
+                                             c_out_elution)
+        np.testing.assert_array_equal(elution_peak_mask_target,
+                                      elution_peak_mask)
         self.assertIsNone(c_out_regeneration)
 
         # test functionality (no recycle)
         self.uo.load_recycle = False
         # sim
-        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, c_out_regeneration = \
-            self.uo._sim_c_out_cycle(f_load, c_load)
+        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, \
+            c_out_regeneration = self.uo._sim_c_out_cycle(f_load, c_load)
         # assert
         np.testing.assert_array_almost_equal(c_unbound, c_out_load)
         self.assertIsNone(c_out_wash)
-        np.testing.assert_array_almost_equal(c_out_elution_target, c_out_elution)
-        np.testing.assert_array_equal(elution_peak_mask_target, elution_peak_mask)
+        np.testing.assert_array_almost_equal(c_out_elution_target,
+                                             c_out_elution)
+        np.testing.assert_array_equal(elution_peak_mask_target,
+                                      elution_peak_mask)
         self.assertIsNone(c_out_regeneration)
 
         # test functionality (recycle both)
         self.uo.wash_recycle = True
         self.uo.load_recycle = True
-        c_out_load_target, c_out_wash_target = self.uo._sim_c_recycle_propagation(f_load, c_unbound, None)
+        c_out_load_target, c_out_wash_target = \
+            self.uo._sim_c_recycle_propagation(f_load, c_unbound, None)
         m_bound = (c_bound * f_load[np.newaxis, :]).sum(1) * self.dt
-        c_out_elution_target, elution_peak_mask_target = self.uo._sim_c_elution_desorption(m_bound)
+        c_out_elution_target, elution_peak_mask_target = \
+            self.uo._sim_c_elution_desorption(m_bound)
         # sim
-        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, c_out_regeneration = \
-            self.uo._sim_c_out_cycle(f_load, c_load)
+        c_out_load, c_out_wash, c_out_elution, elution_peak_mask, \
+            c_out_regeneration = self.uo._sim_c_out_cycle(f_load, c_load)
         # assert
         np.testing.assert_array_almost_equal(c_out_load_target, c_out_load)
         np.testing.assert_array_almost_equal(c_out_wash_target, c_out_wash)
-        np.testing.assert_array_almost_equal(c_out_elution_target, c_out_elution)
-        np.testing.assert_array_equal(elution_peak_mask_target, elution_peak_mask)
+        np.testing.assert_array_almost_equal(c_out_elution_target,
+                                             c_out_elution)
+        np.testing.assert_array_equal(elution_peak_mask_target,
+                                      elution_peak_mask)
         self.assertIsNone(c_out_regeneration)
-
-    def test_calculate(self):
-        self.uo.non_binding_species = [2]
-        self.uo._n_species = 3
-        c_load = np.array([[1], [5], [3]]) * np.ones([self.uo._n_species, self.t.size])
-        f_load = 1.6 * np.ones(c_load.shape[1])
-        f_load[int(round(13 / self.dt)):] = 0
-        self.uo._c = c_load
-        self.uo._f = f_load
-        self.uo.load_recycle = False
-        self.uo.wash_recycle = False
-        self.uo._calculate()
-
-        self.uo.load_recycle = True
-        self.uo.column_porosity_retentate = 0.64
-        self.uo.load_recycle_pdf = get_pdf_gaussian_fixed_relative_width(self.t, relative_sigma=0.2)
-        self.uo._calculate()
-
-        # TODO: Validate logged data and end profiles of `_calculate()` method.
 
 
 class TestACC(unittest.TestCase):
@@ -1445,15 +1597,19 @@ class TestACC(unittest.TestCase):
         self.uo = sc_uo.ACC(
             t=self.t,
             uo_id="ACC_Test",
-            load_bt=get_bt_constant_pattern_solution(self.dt, dbc_100=240, k=0.2),
-            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=100)
+            load_bt=get_bt_constant_pattern_solution(self.dt,
+                                                     dbc_100=240,
+                                                     k=0.2),
+            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(
+                self.t,
+                dispersion_index=100)
         )
 
-        """ Set logger (optional) """
+        """Set logger (optional) """
         self.log = TestLogger()
         self.uo.log = self.log
 
-        """ Set other parameters """
+        """Set other parameters """
         set_ac_parameters(self.uo)
 
     def test_sim_c_wash_desorption(self):
@@ -1463,13 +1619,15 @@ class TestACC(unittest.TestCase):
     def test_calculate(self):
         self.uo.non_binding_species = [2]
         self.uo._n_species = 4
-        c_load = np.array([[1], [5], [3], [3]]) * np.ones([self.uo._n_species, self.t.size])
+        c_load = np.array([[1], [5], [3], [3]]) \
+            * np.ones([self.uo._n_species, self.t.size])
         f_load = 1.8 * np.ones(c_load.shape[1])
         f_load[int(round(15 / self.dt)):] = 0
         self.uo._c = c_load
         self.uo._f = f_load
         self.uo.load_recycle = False
         self.uo.wash_recycle = False
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._calculate()
 
 
@@ -1481,9 +1639,15 @@ class TestPCC(unittest.TestCase):
         self.uo = sc_uo.PCC(
             t=self.t,
             uo_id="PCC_Test",
-            load_bt=get_bt_constant_pattern_solution(self.dt, dbc_100=240, k=0.2),
-            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=100),
-            load_recycle_pdf=get_pdf_gaussian_fixed_relative_width(self.t, relative_sigma=0.2),
+            load_bt=get_bt_constant_pattern_solution(self.dt,
+                                                     dbc_100=240,
+                                                     k=0.2),
+            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(
+                self.t,
+                dispersion_index=100),
+            load_recycle_pdf=get_pdf_gaussian_fixed_relative_width(
+                self.t,
+                relative_sigma=0.2),
             column_porosity_retentate=0.64
         )
 
@@ -1492,11 +1656,11 @@ class TestPCC(unittest.TestCase):
         self.assertTrue(self.uo.load_recycle)
         self.assertFalse(self.uo.wash_recycle)
 
-        """ Set logger (optional) """
+        """Set logger (optional) """
         self.log = TestLogger()
         self.uo.log = self.log
 
-        """ Set other parameters """
+        """Set other parameters """
         set_ac_parameters(self.uo)
 
     def test_sim_c_wash_desorption(self):
@@ -1506,11 +1670,13 @@ class TestPCC(unittest.TestCase):
     def test_calculate(self):
         self.uo.non_binding_species = [2]
         self.uo._n_species = 3
-        c_load = np.array([[1], [0.2], [3]]) * np.ones([self.uo._n_species, self.t.size])
+        c_load = np.array([[1], [0.2], [3]]) * np.ones([self.uo._n_species,
+                                                        self.t.size])
         f_load = 1.6 * np.ones(c_load.shape[1])
         f_load[int(round(13 / self.dt)):] = 0
         self.uo._c = c_load
         self.uo._f = f_load
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._calculate()
 
 
@@ -1518,7 +1684,8 @@ class TestPCCWithWashDesorption(unittest.TestCase):
 
     def assert_defined_value(self, par_name, func, *args):
         v = getattr(self.uo, par_name)
-        setattr(self.uo, par_name, -1 if isinstance(v, numbers.Number) else None)
+        setattr(self.uo, par_name,
+                -1 if isinstance(v, numbers.Number) else None)
         with self.assertRaises(AssertionError):
             func(*args)
         setattr(self.uo, par_name, v)
@@ -1529,9 +1696,15 @@ class TestPCCWithWashDesorption(unittest.TestCase):
         self.uo = sc_uo.PCCWithWashDesorption(
             t=self.t,
             uo_id="PCCWithWashDesorption_Test",
-            load_bt=get_bt_constant_pattern_solution(self.dt, dbc_100=240, k=0.2),
-            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(self.t, dispersion_index=100),
-            load_recycle_pdf=get_pdf_gaussian_fixed_relative_width(self.t, relative_sigma=0.2),
+            load_bt=get_bt_constant_pattern_solution(self.dt,
+                                                     dbc_100=240,
+                                                     k=0.2),
+            peak_shape_pdf=get_pdf_gaussian_fixed_dispersion(
+                self.t,
+                dispersion_index=100),
+            load_recycle_pdf=get_pdf_gaussian_fixed_relative_width(
+                self.t,
+                relative_sigma=0.2),
             column_porosity_retentate=0.64
         )
 
@@ -1539,11 +1712,11 @@ class TestPCCWithWashDesorption(unittest.TestCase):
         self.assertTrue(self.uo.wash_recycle)
         self.assertTrue(self.uo.wash_desorption)
 
-        """ Set logger (optional) """
+        """Set logger (optional) """
         self.log = TestLogger()
         self.uo.log = self.log
 
-        """ Set other parameters """
+        """Set other parameters """
         set_ac_parameters(self.uo)
 
     def test_sim_c_wash_desorption(self):
@@ -1553,7 +1726,10 @@ class TestPCCWithWashDesorption(unittest.TestCase):
         self.uo._wash_f = 3.1
         self.uo._wash_t = 5 * self.uo._cv / self.uo._wash_f
         self.uo.wash_desorption_tail_half_time_cv = 1
-        c_bound = np.array([[1], [0.2], [3], [3]]) * np.ones([4, int(self.t.size / 12)])
+        data_log = {}
+        self.uo._cycle_tree = data_log
+        c_bound = np.array([[1], [0.2], [3], [3]]) \
+            * np.ones([4, int(self.t.size / 12)])
         f_load = self.uo._load_f * np.ones(c_bound.shape[1])
         wash_recycle_duration_t = 3 * self.uo._cv / self.uo._wash_f
         wash_recycle_duration_cv = 3
@@ -1563,52 +1739,71 @@ class TestPCCWithWashDesorption(unittest.TestCase):
         self.uo.non_binding_species = []
         self.uo.wash_recycle_duration_t = wash_recycle_duration_t
         self.uo.wash_recycle_duration_cv = wash_recycle_duration_cv
-        self.uo.wash_desorption_desorbable_material_share = wash_desorption_desorbable_material_share
-        self.uo.wash_desorption_desorbable_above_dbc = wash_desorption_desorbable_above_dbc
+        self.uo.wash_desorption_desorbable_material_share = \
+            wash_desorption_desorbable_material_share
+        self.uo.wash_desorption_desorbable_above_dbc = \
+            wash_desorption_desorbable_above_dbc
 
         # test assertions
         self.assert_defined_value("wash_desorption_tail_half_time_cv",
-                                  self.uo._sim_c_wash_desorption, f_load, c_bound)
-        self.assert_defined_value("_load_f", self.uo._sim_c_wash_desorption, f_load, c_bound)
-        self.assert_defined_value("_wash_f", self.uo._sim_c_wash_desorption, f_load, c_bound)
-        self.assert_defined_value("_wash_t", self.uo._sim_c_wash_desorption, f_load, c_bound)
-        self.assert_defined_value("_cv", self.uo._sim_c_wash_desorption, f_load, c_bound)
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
+        self.assert_defined_value("_load_f",
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
+        self.assert_defined_value("_wash_f",
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
+        self.assert_defined_value("_wash_t",
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
+        self.assert_defined_value("_cv",
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
         self.uo.wash_desorption_desorbable_material_share = -1
         self.assert_defined_value("wash_desorption_desorbable_above_dbc",
-                                  self.uo._sim_c_wash_desorption, f_load, c_bound)
-        self.uo.wash_desorption_desorbable_material_share = wash_desorption_desorbable_material_share
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
+        self.uo.wash_desorption_desorbable_material_share = \
+            wash_desorption_desorbable_material_share
         self.uo.wash_desorption_desorbable_above_dbc = -1
         self.assert_defined_value("wash_desorption_desorbable_material_share",
-                                  self.uo._sim_c_wash_desorption, f_load, c_bound)
+                                  self.uo._sim_c_wash_desorption,
+                                  f_load, c_bound)
 
         # test functionality
+        def run_test():
+            _c_desorbed = self.uo._sim_c_wash_desorption(f_load, c_bound)
+            _m_load = (f_load[np.newaxis, :] * c_bound).sum() * self.dt
+            _p_sum = data_log["p_desorbed"].sum() * self.dt
+            self.assertAlmostEqual(
+                _c_desorbed.sum() * self.uo._wash_f * self.dt,
+                wash_desorption_desorbable_material_share * _m_load * _p_sum
+            )
+
         # defined by desorbable material share
         self.uo.wash_desorption_desorbable_above_dbc = -1
-        self.uo.wash_desorption_desorbable_material_share = wash_desorption_desorbable_material_share
-        c_desorbed = self.uo._sim_c_wash_desorption(f_load, c_bound)
-        m_load = (f_load[np.newaxis, :] * c_bound).sum() * self.dt
-        self.assertAlmostEqual(
-            c_desorbed.sum() * self.uo._wash_f * self.dt,
-            wash_desorption_desorbable_material_share * m_load
-        )
+        self.uo.wash_desorption_desorbable_material_share = \
+            wash_desorption_desorbable_material_share
+        run_test()
         # with waring (if defined in 2 ways)
-        self.uo.wash_desorption_desorbable_above_dbc = wash_desorption_desorbable_above_dbc
-        self.uo.wash_desorption_desorbable_material_share = wash_desorption_desorbable_material_share
+        self.uo.wash_desorption_desorbable_above_dbc = \
+            wash_desorption_desorbable_above_dbc
+        self.uo.wash_desorption_desorbable_material_share = \
+            wash_desorption_desorbable_material_share
         with self.assertWarns(Warning):
-            c_desorbed = self.uo._sim_c_wash_desorption(f_load, c_bound)
-            m_load = (f_load[np.newaxis, :] * c_bound).sum() * self.dt
-            self.assertAlmostEqual(
-                c_desorbed.sum() * self.uo._wash_f * self.dt,
-                wash_desorption_desorbable_material_share * m_load
-            )
+            run_test()
         # defined by dbc limit
-        self.uo.wash_desorption_desorbable_above_dbc = wash_desorption_desorbable_above_dbc
+        self.uo.wash_desorption_desorbable_above_dbc = \
+            wash_desorption_desorbable_above_dbc
         self.uo.wash_desorption_desorbable_material_share = -1
         c_desorbed = self.uo._sim_c_wash_desorption(f_load, c_bound)
         m_load = (f_load[np.newaxis, :] * c_bound).sum() * self.dt
+        p_sum = data_log["p_desorbed"].sum() * self.dt
         self.assertAlmostEqual(
             c_desorbed.sum() * self.uo._wash_f * self.dt,
-            m_load - wash_desorption_desorbable_above_dbc * self.uo._cv
+            (m_load - wash_desorption_desorbable_above_dbc * self.uo._cv
+             ) * p_sum
         )
 
     # noinspection DuplicatedCode
@@ -1629,7 +1824,8 @@ class TestPCCWithWashDesorption(unittest.TestCase):
         self.uo.load_cv = 2.3
         self.assertFalse(hasattr(self.uo, "_cycle_t"))
         self.uo._calc_cycle_t()
-        self.assertEqual(self.uo._cycle_t, self.uo.load_cv * self.uo._cv / self.uo._load_f)
+        self.assertEqual(self.uo._cycle_t,
+                         self.uo.load_cv * self.uo._cv / self.uo._load_f)
         # warn if defined in multiple ways
         self.uo.load_c_end_ss = np.array([[1], [0.5]])
         with self.assertWarns(Warning):
@@ -1660,8 +1856,8 @@ class TestPCCWithWashDesorption(unittest.TestCase):
             # cycle switch limit concentration
             load_c_end_ss = self.uo.load_c_end_relative_ss * load_c_ss
             np.testing.assert_array_almost_equal(
-                self.log.get_data_tree(self.uo.uo_id)['load_c_end_ss'], load_c_end_ss
-            )
+                self.log.get_data_tree(self.uo.uo_id)['load_c_end_ss'],
+                load_c_end_ss)
 
             # cycle duration
             self.assertAlmostEqual(self.uo._cycle_t, cycle_t, 2)
@@ -1693,33 +1889,193 @@ class TestPCCWithWashDesorption(unittest.TestCase):
             self.uo._calc_load_recycle_wash_i()
 
             self.uo.load_c_end_estimate_with_iterative_solver = False
-            run_test(363.873)
+            run_test(364.923)
             self.uo.load_c_end_estimate_with_iterative_solver = True
-            run_test(363.918)
+            run_test(364.918)
 
             self.uo.load_recycle = True
             self.uo.wash_recycle = True
 
             self.uo.load_c_end_estimate_with_iterative_solver = False
-            run_test(353.69)
+            run_test(354.737)
             self.uo.load_c_end_estimate_with_iterative_solver = True
-            run_test(353.72)
+            run_test(354.818)
 
     def test_calculate(self):
         self.uo.wash_desorption = True
         self.uo.wash_desorption_tail_half_time_cv = 3
         self.uo.wash_desorption_desorbable_material_share = 0.1
         self.uo.wash_recycle_duration_cv = 3
-
         self.uo.wash_recycle = True
-
         self.uo.non_binding_species = [2, 3]
         self.uo._n_species = 4
         c_load = np.array([[1], [0.2], [3], [3]]) * np.ones([4, self.t.size])
         f_load = 1.8 * np.ones(c_load.shape[1])
-        self.uo._c = c_load
-        self.uo._f = f_load
+        self.uo._c = c_load.copy()
+        self.uo._f = f_load.copy()
+        self.uo.elution_peak_shape.log = EmptyLogger()
         self.uo._prepare_simulation()
-        self.uo._calculate()
+        # Assertion on binding species.
+        self.uo.non_binding_species = [0, 1, 2, 3]
+        with self.assertRaises(AssertionError):
+            self.uo._calculate()
+        self.uo.non_binding_species = [2, 3]
 
-        # TODO: Validate logged data and end profiles of `_calculate()` method.
+        def run_calculation():
+            f_in, c_in = self.uo._f.copy(), self.uo._c.copy()
+            f_in_o, c_in_o = self.uo._f.copy(), self.uo._c.copy()
+            self.uo._calculate()
+            f_out, c_out = self.uo._f, self.uo._c
+            cycle_log = self.uo.log.get_data_tree(self.uo.uo_id)['cycles']
+            f_in_i_end = min(utils.vectors.true_end(f_in > 0), self.t.size)
+            self.uo._f, self.uo._c = f_in.copy(), c_in.copy()
+            self.uo._prepare_simulation()
+            binding_species = [i for i in range(self.uo._n_species)
+                               if i not in self.uo.non_binding_species]
+            c_in = c_in[binding_species]
+            c_out_t = c_in_o * 0
+            f_out_t = f_in_o * 0
+            previous_c_bt_wash = None
+            for i, cycle in enumerate(cycle_log):
+                self.assertEqual(
+                    cycle["i_cycle_load_start"],
+                    self.uo._cycle_start_i_list[
+                        i - 1 if i > 0 and self.uo.load_recycle else i
+                    ])
+                self.assertEqual(
+                    cycle["i_cycle_load_step_start"],
+                    self.uo._cycle_start_i_list[i])
+                self.assertEqual(
+                    cycle["i_cycle_load_end"],
+                    self.uo._cycle_start_i_list[i + 1]
+                    if i + 1 < len(cycle_log) else f_in_i_end - 1
+                )
+                c_out_load, c_out_wash, c_out_elution, \
+                    b_out_elution, c_out_regeneration = \
+                    self.uo._sim_c_out_cycle(
+                        f_in[cycle["i_cycle_load_start"]:
+                             cycle["i_cycle_load_end"]],
+                        c_in[:,
+                             cycle["i_cycle_load_start"]:
+                             cycle["i_cycle_load_end"]])
+                np.testing.assert_array_almost_equal(
+                    cycle["c_out_load"],
+                    c_out_load)
+                np.testing.assert_array_almost_equal(
+                    cycle["c_out_wash"]
+                    if cycle["c_out_wash"] is not None else [],
+                    c_out_wash
+                    if c_out_wash is not None else [])
+                np.testing.assert_array_almost_equal(
+                    cycle["c_out_elution"]
+                    if cycle["c_out_elution"] is not None else [],
+                    c_out_elution
+                    if c_out_elution is not None else [])
+                np.testing.assert_array_almost_equal(
+                    cycle["b_out_elution"]
+                    if cycle["b_out_elution"] is not None else [],
+                    b_out_elution
+                    if b_out_elution is not None else [])
+                np.testing.assert_array_almost_equal(
+                    cycle["c_out_regeneration"]
+                    if cycle["c_out_regeneration"] is not None else [],
+                    c_out_regeneration
+                    if c_out_regeneration is not None else [])
+                if self.uo.load_recycle:
+                    i_load_start_rel = cycle["i_cycle_load_step_start"] \
+                        - cycle["i_cycle_load_end"]
+                    c_load_recycle = c_out_load[:, i_load_start_rel:]
+                    c_in[:,
+                         cycle["i_cycle_load_step_start"]:
+                         cycle["i_cycle_load_end"]] = c_load_recycle
+                    np.testing.assert_array_almost_equal(
+                        cycle["m_load_recycle"],
+                        c_load_recycle.sum(1) * self.uo._load_f * self.dt)
+                    np.testing.assert_array_almost_equal(
+                        cycle["c_load_recycle"],
+                        c_load_recycle)
+                    c_loss_bt_2nd_column = c_out_load[:, i_load_start_rel]
+                    np.testing.assert_array_almost_equal(
+                        cycle["m_loss_bt_2nd_column"],
+                        c_loss_bt_2nd_column.sum() * self.dt * self.uo._load_f)
+                    np.testing.assert_array_almost_equal(
+                        cycle["c_loss_bt_2nd_column"],
+                        c_loss_bt_2nd_column)
+                else:
+                    np.testing.assert_array_almost_equal(
+                        cycle["m_loss_load"],
+                        c_out_load.sum() * self.dt * self.uo._load_f)
+                if self.uo.wash_recycle:
+                    if previous_c_bt_wash is not None \
+                            and previous_c_bt_wash.size > 0:
+                        i_wash_duration = min(
+                            self.uo._wash_recycle_i_duration,
+                            self.t.size - cycle["i_cycle_load_step_start"])
+                        s = c_in[
+                            :,
+                            cycle["i_cycle_load_step_start"]:
+                            cycle["i_cycle_load_step_start"] + i_wash_duration]
+                        np.testing.assert_array_almost_equal(
+                            cycle["m_loss_load_bt_during_wash_recycle"],
+                            s.sum() * self.dt * self.uo._load_f)
+                        np.testing.assert_array_almost_equal(
+                            cycle["c_lost_load_during_wash_recycle"],
+                            s)
+                        np.testing.assert_array_almost_equal(
+                            cycle["c_wash_recycle"],
+                            previous_c_bt_wash[:, :i_wash_duration])
+                        np.testing.assert_array_almost_equal(
+                            cycle["m_wash_recycle"],
+                            previous_c_bt_wash[:, :i_wash_duration].sum(1)
+                            * self.dt * self.uo._wash_f)
+                        s[:] = previous_c_bt_wash[:, :i_wash_duration]
+                        f_in[cycle["i_cycle_load_step_start"]:
+                             cycle["i_cycle_load_step_start"]
+                             + i_wash_duration] = self.uo._wash_f
+                    previous_c_bt_wash = c_out_wash
+                else:
+                    # Report losses during wash.
+                    if c_out_wash is None:
+                        c_out_wash = np.zeros(
+                            [len(binding_species),
+                             int(round(self.uo._wash_t / self.dt))])
+                    m_loss_wash = c_out_wash.sum() * self.dt * self.uo._load_f
+                    np.testing.assert_array_almost_equal(
+                        cycle["m_loss_wash"],
+                        m_loss_wash)
+                # Elution.
+                [i_el_rel_start, i_el_rel_end] = \
+                    utils.vectors.true_start_and_end(b_out_elution)
+                i_el_start = min(
+                    self.t.size,
+                    cycle["i_cycle_load_end"]
+                    + c_out_wash.shape[1] + i_el_rel_start)
+                i_el_end = min(
+                    self.t.size,
+                    cycle["i_cycle_load_end"]
+                    + c_out_wash.shape[1] + i_el_rel_end)
+                i_el_rel_end = i_el_rel_start + i_el_end - i_el_start
+                # Log.
+                self.assertEqual(cycle["i_elution_start"], i_el_start)
+                self.assertEqual(cycle["i_elution_end"], i_el_end)
+                # Write to global outlet.
+                f_out_t[i_el_start:i_el_end] = self.uo._elution_f
+                c_out_t[binding_species, i_el_start:i_el_end] = \
+                    c_out_elution[:, i_el_rel_start:i_el_rel_end]
+
+            np.testing.assert_array_almost_equal(f_out_t, f_out)
+            np.testing.assert_array_almost_equal(c_out_t, c_out)
+
+        run_calculation()
+        self.uo.wash_desorption = False
+        self.uo._c = c_load.copy()
+        self.uo._f = f_load.copy()
+        run_calculation()
+        self.uo.wash_recycle = False
+        self.uo._c = c_load.copy()
+        self.uo._f = f_load.copy()
+        run_calculation()
+        self.uo.load_recycle = False
+        self.uo._c = c_load.copy()
+        self.uo._f = f_load.copy()
+        run_calculation()

@@ -70,9 +70,8 @@ class PeakShapeTest(unittest.TestCase):
         self.validate_max(t, p, 19.82)
 
         # warnings
-
-        with self.assertWarns(Warning, msg="EMG peak: sigma < 4 * dt"):
-            peak_shapes.emg(t, rt_mean=rt_mean, sigma=4 * t[1] - 0.01, skew=1, logger=self.log)
+        with self.assertWarns(Warning, msg="EMG peak: sigma + 1 / skew < 4 * dt"):
+            peak_shapes.emg(t, rt_mean=rt_mean, sigma=4 * t[1] - 0.1 - 0.01, skew=10, logger=self.log)
 
         with self.assertRaises(RuntimeError, msg="Peak shape: integral: 0.7723355216030109"):
             with self.assertWarns(Warning, msg="EMG peak: rt_mean + 3 * sigma > t[-1]"):
@@ -119,11 +118,11 @@ class PeakShapeTest(unittest.TestCase):
         self.validate_max(t, p, 39.41918)
 
     # noinspection DuplicatedCode
-    def test_skew_normal(self) -> None:
+    def test_skewed_normal(self) -> None:
         t = np.linspace(0, 150, 2000)
         rt_mean = 83.5
         sigma = 10.5
-        p = peak_shapes.skew_normal(t, rt_mean, sigma, 0, self.log)
+        p = peak_shapes.skewed_normal(t, rt_mean, sigma, 0, self.log)
         # should be same as for gauss
         self.validate_normalization(t, p)
         self.validate_max(t, p, rt_mean)
@@ -135,24 +134,24 @@ class PeakShapeTest(unittest.TestCase):
         # warnings
 
         with self.assertWarns(Warning, msg="Skewed normal peak: sigma < 4 * dt"):
-            peak_shapes.skew_normal(t, rt_mean=rt_mean, sigma=4 * t[1] - 0.01, skew=1, logger=self.log)
+            peak_shapes.skewed_normal(t, rt_mean=rt_mean, sigma=4 * t[1] - 0.01, skew=1, logger=self.log)
 
         with self.assertWarns(Warning, msg="Skewed normal peak: rt_mean + 3 * sigma > t[-1]"):
-            peak_shapes.skew_normal(t, rt_mean=rt_mean, sigma=(t[-1] - rt_mean) / 3 + 0.01, skew=1, logger=self.log)
+            peak_shapes.skewed_normal(t, rt_mean=rt_mean, sigma=(t[-1] - rt_mean) / 3 + 0.01, skew=1, logger=self.log)
 
         with self.assertWarns(Warning, msg="Skewed normal peak: rt_mean < 3 * sigma"):
-            peak_shapes.skew_normal(t, rt_mean=rt_mean, sigma=rt_mean / 3 + 0.01, skew=1, logger=self.log)
+            peak_shapes.skewed_normal(t, rt_mean=rt_mean, sigma=rt_mean / 3 + 0.01, skew=1, logger=self.log)
 
         with self.assertWarns(Warning, msg="Skewed normal peak: skew < -20"):
-            peak_shapes.skew_normal(t, rt_mean=rt_mean, sigma=sigma, skew=-20.1, logger=self.log)
+            peak_shapes.skewed_normal(t, rt_mean=rt_mean, sigma=sigma, skew=-20.1, logger=self.log)
 
         with self.assertWarns(Warning, msg="Skewed normal peak: skew > 20"):
-            peak_shapes.skew_normal(t, rt_mean=rt_mean, sigma=sigma, skew=20.1, logger=self.log)
+            peak_shapes.skewed_normal(t, rt_mean=rt_mean, sigma=sigma, skew=20.1, logger=self.log)
 
         # test 2
         t = np.linspace(0, 150, 3000)
         rt_mean = 55
-        p = peak_shapes.skew_normal(t, rt_mean, 7.4, 3.87, self.log)
+        p = peak_shapes.skewed_normal(t, rt_mean, 7.4, 3.87, self.log)
         # validations
         self.validate_normalization(t, p)
         self.validate_rt_mean(t, p, rt_mean)
@@ -165,7 +164,7 @@ class PeakShapeTest(unittest.TestCase):
         # test 3
         t = np.linspace(0, 50, 2500)
         rt_mean = 35
-        p = peak_shapes.skew_normal(t, rt_mean, 3.5, -8, self.log)
+        p = peak_shapes.skewed_normal(t, rt_mean, 3.5, -8, self.log)
         # validations
         self.validate_normalization(t, p)
         self.validate_rt_mean(t, p, rt_mean)
@@ -205,6 +204,7 @@ class PeakShapeTest(unittest.TestCase):
 
         with self.assertWarns(Warning, msg="Tanks in series peak: rt_mean > t[-1] / 4"):
             peak_shapes.tanks_in_series(t, rt_mean=t[-1] / 4 + 0.01, n_tanks=4, logger=self.log)
+        peak_shapes.tanks_in_series(t, rt_mean=t[-1] / 4 + 0.01, n_tanks=4, logger=self.log, allow_open_end=True)
 
         with self.assertRaises(RuntimeError, msg="Tanks in series peak: Initial time point > 0"):
             peak_shapes.tanks_in_series(t + 0.1, rt_mean=rt_mean, n_tanks=4, logger=self.log)

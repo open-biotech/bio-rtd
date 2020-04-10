@@ -26,7 +26,7 @@ Interactive Bokeh GUI can easily be removed from this example and
 replaced by plots and/or reports as in `examples/integrated_mab.py`.
 
 """
-
+import inspect
 import pathlib
 import numpy as np
 from bokeh.io import show
@@ -67,7 +67,7 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
         uo['uo_class'] = fc_uo.FlowThrough
         uo['parameters'] = {
             "uo_id": uo['id'],
-            "pdf": pdf.GaussianFixedDispersion(t, v_sigma ** 2 / v_void),
+            "pdf": pdf.GaussianFixedRelativeWidth(t, v_sigma / v_void),
             "gui_title": uo['title'],
         }
         uo['attributes'] = {
@@ -83,7 +83,7 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
         uo['uo_class'] = fc_uo.FlowThroughWithSwitching
         uo['parameters'] = {
             "uo_id": uo['id'],
-            "pdf": pdf.GaussianFixedDispersion(t, v_sigma ** 2 / v_void),
+            "pdf": pdf.GaussianFixedRelativeWidth(t, v_sigma / v_void),
             "gui_title": uo['title'],
         }
         uo['attributes'] = {
@@ -94,13 +94,12 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
     def cvi_column(uo: dict):
         d = uo['data']
         rt_target = d['mean RT [min]']
-        v_sigma = d['peak sigma [mL]']
-        v_peak = d['peak position [mL]']
+        t_sigma = d['peak sigma [min]']
 
         uo['uo_class'] = fc_uo.FlowThrough
         uo['parameters'] = {
             "uo_id": uo['id'],
-            "pdf": pdf.GaussianFixedDispersion(t, v_sigma ** 2 / v_peak),
+            "pdf": pdf.GaussianFixedDispersion(t, t_sigma ** 2 / rt_target),
             "gui_title": uo['title'],
         }
         uo['attributes'] = {
@@ -118,7 +117,8 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
         uo['uo_class'] = fc_uo.FlowThroughWithSwitching
         uo['parameters'] = {
             "uo_id": uo['id'],
-            "pdf": pdf.GaussianFixedDispersion(t, v_peak_sigma ** 2 / v_peak),
+            "pdf": pdf.GaussianFixedRelativeWidth(t,
+                                                  v_peak_sigma / v_peak),
             "gui_title": uo['title'],
         }
         uo['attributes'] = {
@@ -209,7 +209,8 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
             "uo_id": uo['id'],
             "load_bt": ConstantPatternSolution(dt, dbc_100=dbc_100, k=k),
             "peak_shape_pdf": pdf.ExpModGaussianFixedRelativeWidth(
-                t, sigma_relative=ep_sigma / ep_rt, skew=ep_skew),
+                t, sigma_relative=ep_sigma / ep_rt,
+                tau_relative=1 / ep_skew / ep_rt),
             "gui_title": uo['title'],
         }
         uo['attributes'] = {
@@ -275,7 +276,9 @@ def create_uo_pars_and_attrs(t: np.ndarray, _uo_lib: dict):
             "uo_id": uo['id'],
             "load_bt": ConstantPatternSolution(dt, dbc_100=dbc_100, k=k),
             "peak_shape_pdf": pdf.ExpModGaussianFixedRelativeWidth(
-                t, sigma_relative=ep_sigma / ep_rt, skew=ep_skew),
+                t,
+                sigma_relative=ep_sigma / ep_rt,
+                tau_relative=1 / ep_skew / ep_rt),
             "load_recycle_pdf": pdf.GaussianFixedDispersion(
                 t, dispersion_index=hetp / v_lin_load),
             # Porosity of the column for protein.
@@ -370,6 +373,7 @@ def generate_inlet(t, inlet_data, species):
     return inlet
 
 
+# noinspection DuplicatedCode
 def plot_profiles(_rtd_model):
     plt_group = []
     for i, uo in enumerate([_rtd_model.inlet, *_rtd_model.dsp_uo_chain]):
@@ -462,20 +466,20 @@ def add_adj_pars(_rtd_model):
         pass
 
 
-def customize_gui(gui):
+def customize_gui(_gui):
     # customize GUI
-    gui.plot_height = 280
-    gui.line_colors = ['#3288bd', 'green', 'red']
-    gui.x_scale_factor = 1 / 60
-    gui.x_label = 't [h]'
-    gui.y_label_f = 'f [mL/min]'
-    gui.y_label_c = 'c [mg/mL]'
-    gui.custom_x_ticks = np.arange(25)
-    gui.legend_only_on_first = True
-    gui.dti_plot = 1
-    gui.plot_first_component_as_sum = False
-    gui.line_dashes = ['dashed']
-    gui.font_size_pt = 14
+    _gui.plot_height = 280
+    _gui.line_colors = ['#3288bd', 'green', 'red']
+    _gui.x_scale_factor = 1 / 60
+    _gui.x_label = 't [h]'
+    _gui.y_label_f = 'f [mL/min]'
+    _gui.y_label_c = 'c [mg/mL]'
+    _gui.custom_x_ticks = np.arange(25)
+    _gui.legend_only_on_first = True
+    _gui.dti_plot = 1
+    _gui.plot_first_component_as_sum = False
+    _gui.line_dashes = ['dashed']
+    _gui.font_size_pt = 14
 
 
 def generate_up_rtd_model():
@@ -508,9 +512,8 @@ def generate_up_rtd_model():
 
 rtd_model = generate_up_rtd_model()
 
-print(__name__[-4:])
-
-if __name__[:9] == "bokeh_app_k":
+if __name__[:9] == "bokeh_app" \
+        and "sphinx" not in inspect.stack()[-1].filename:
     # Create GUI.
     gui = BokehServerGui(rtd_model)
     # Customize GUI.

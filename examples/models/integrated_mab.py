@@ -1,7 +1,7 @@
 """Example `RtdModel` for mAB downstream process
 
 In this example we define unit operations for a hypothetical mAB
-process. We use only single species in the model in order to narrow
+process. We use only single specie in the model in order to narrow
 the scope of the sample.
 
 Examples
@@ -75,7 +75,7 @@ t = np.arange(0, 24.1 * 60, dt)
 
 # Cell removal.
 ft_cell_removal = fc_uo.FlowThroughWithSwitching(
-    t, pdf=pdf.GaussianFixedRelativeWidth(t, relative_sigma=0.1),
+    t, pdf=pdf.GaussianFixedRelativeWidth(t, relative_sigma=0.2),
     uo_id="cell_removal_ft",
     gui_title="Cell removal"
 )
@@ -86,21 +86,25 @@ ft_cell_removal.v_cycle = 20000  # mL; switch filter unit after 20 L
 # Describe binding dynamics during load.
 load_bt = bt_load.ConstantPatternSolution(dt, dbc_100=50, k=0.12)
 # Describe elution peak with EMG pdf.
-ep_rt_mean, sigma, skew = peak_fitting.calc_emg_parameters_from_peak_shape(
-    t_peak_start=9,  # experimental data - peak start
-    t_peak_max=16,  # experimental data - peak position (max signal)
-    t_peak_end=27.5,  # experimental data - peak end
-    relative_threshold=0.05,  # 5 % threshold
-)
+ep_rt_mean, sigma, skew = \
+    peak_fitting.calc_emg_parameters_from_peak_shape(t_peak_start=9,
+                                                     t_peak_max=16,
+                                                     t_peak_end=27.5,
+                                                     relative_threshold=0.05)
 # Assuming the above experiments were done with 10 mL column.
 ep_rt_mean_cv = ep_rt_mean / 10
 # Elution peak shape pdf.
 peak_shape_pdf = pdf.ExpModGaussianFixedRelativeWidth(
-    t, sigma_relative=sigma / ep_rt_mean, skew=skew
+    t,
+    sigma_relative=sigma / ep_rt_mean,
+    tau_relative=1 / skew / ep_rt_mean,
+    pdf_id="emg_rw_el_peak"
 )
 # Load recycle pdf. We try to describe the propagation of unbound and/or
 # desorbed material throughout the column during load (and wash) step.
-load_recycle_pdf = pdf.GaussianFixedDispersion(t, dispersion_index=2 * 2 / 30)
+load_recycle_pdf = pdf.GaussianFixedDispersion(t,
+                                               dispersion_index=2 * 2 / 30,
+                                               pdf_id="g_fd_load_recycle_pdf")
 pcc_pro_a = sc_uo.PCC(
     t,
     load_bt=load_bt,
@@ -188,7 +192,7 @@ rtd_model = RtdModel(inlet=const_inlet, dsp_uo_chain=dsp_train,
                      title="Sample model for mAB production process")
 
 if __name__ != "examples.models.integrated_mab":
-    # Prevent log from printing warning when not running script directly.
+    # Ignore warnings when not running script directly.
     rtd_model.log.log_level = rtd_model.log.ERROR
 
 """Running simulation."""
@@ -208,7 +212,8 @@ intermediate data, such as concentration profiles during the wash step.
 
 
 def print_pcc_info():
-    print(f"\nDisplaying data about load material distribution during the pcc:")
+    print(f"\nDisplaying data about load material"
+          f" distribution during the pcc:")
     print(f"--" * 32)
     pcc_data = rtd_model.log.get_data_tree(pcc_pro_a.uo_id)
 
@@ -221,7 +226,7 @@ def print_pcc_info():
               f" {cycle_data['m_bound'][0] / m_load * 100:.0f} %")
         print(f"Load recycled during load step:"
               f" {cycle_data['m_load_recycle'][0] / m_load * 100:.0f} %")
-        # Because wash gets recycled on 2nd column we pull data from next cycle.
+        # Wash gets recycled on 2nd column, thus we pull data from next cycle.
         m_wash = pcc_data["cycles"][i + 1]['m_wash_recycle'][0] \
             if i + 1 < len(pcc_data["cycles"]) else 0
         print(f"Load recycled during wash step:"
@@ -239,6 +244,7 @@ def print_pcc_info():
 """Plot flow rate and concentration profile."""
 
 
+# noinspection DuplicatedCode
 def plot_profiles():
     plt_group = []
     for i, uo in enumerate([const_inlet, *dsp_train]):

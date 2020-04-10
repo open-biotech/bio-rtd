@@ -5,6 +5,9 @@ Loggers handle non-fatal events (info, debug, warning and non-fatal
 error messages) as well as internally stored intermediate process data.
 
 General guidelines:
+
+- **Skip logging and raise Exception directly** in case of a serious
+  error.
 - ERROR messages for highly probable sources of inaccuracies within the
   model (e.g. in case a probability distributions contains only a few
   data points), but we don't necessarily want to raise an exception.
@@ -12,7 +15,11 @@ General guidelines:
   in the model.
 - INFO for storing short intermediate data (everything apart from time
   series).
-- DEBUG for storing long data (time series).
+- DEBUG for storing long intermediate data (time series).
+
+See Also
+--------
+:class:`bio_rtd.logger.RtdLogger`
 
 Examples
 --------
@@ -39,7 +46,7 @@ RuntimeError: Warning Info
 """
 
 __all__ = ['RtdLogger', 'DefaultLogger', 'DataStoringLogger', 'StrictLogger']
-__version__ = '0.7'
+__version__ = '0.7.1'
 __author__ = 'Jure Sencar'
 
 
@@ -58,7 +65,7 @@ class RtdLogger(_ABC):
 
     Attributes
     ----------
-    log_level : int
+    log_level
         Verbosity level for messages. Default = `WARNING`.
     log_data
         If True, logger collects copies of intermediate data.
@@ -71,21 +78,21 @@ class RtdLogger(_ABC):
     """
 
     ERROR = 40
-    """Log level ERROR
+    """Log level ERROR.
     
     ERROR level is meant for signaling events (with messages) that very
     likely impact the accuracy of the model.
     
     """
     WARNING = 30
-    """Log level WARNING
+    """Log level WARNING.
     
     WARNING level is meant for signaling events (with messages) that
     might be the source of inaccuracies in the model.
     
     """
     INFO = 20
-    """Log level INFO
+    """Log level INFO.
     
     INFO level is meant for events that might indicate potential mishaps
     in the model, but can also occur normally (e.g. if surge tank runs 
@@ -97,7 +104,7 @@ class RtdLogger(_ABC):
     
     """
     DEBUG = 10
-    """Log level DEBUG
+    """Log level DEBUG.
     
     DEBUG level is meant for keeping also large intermediate data
     (time series) in logger.
@@ -264,17 +271,20 @@ class RtdLogger(_ABC):
         raise NotImplementedError
 
     @staticmethod
-    def _get_parent_uo_id() -> str:
-        """Helper function to find 'uo_id' of the notifying instance.
+    def _get_parent_log_id() -> str:
+        """Find closest 'log_entity_id' of the notifying instance.
 
         It is convenience method to provide unit operation to be used
         e.g. for adding information to the printed log messages.
 
         """
         for frame in _inspect.stack():
+            # noinspection PyProtectedMember
             if "self" in frame[0].f_locals.keys() \
-                    and hasattr(frame[0].f_locals["self"], 'uo_id'):
-                return frame[0].f_locals["self"].uo_id + ": "
+                    and hasattr(frame[0].f_locals["self"], '_log_entity_id')\
+                    and len(frame[0].f_locals['self']._log_entity_id) > 0:
+                # noinspection PyProtectedMember
+                return f"{frame[0].f_locals['self']._log_entity_id}: "
         return ""
 
     def get_data_tree(self, data_tree_id: str) -> dict:
@@ -301,6 +311,35 @@ class DefaultLogger(RtdLogger):
 
     Does not store data.
 
+    Parameters
+    ----------
+    log_level
+        Default: WARNING.
+    log_data
+        Default: False.
+    log_level_data
+        Default: DEBUG.
+
+    Examples
+    --------
+    >>> log = DefaultLogger()
+    >>> data_tree = dict()
+    >>> log.set_data_tree("my_uo", data_tree)
+    >>> log.i_data(data_tree, "par_i", 8.4)  # ignored
+    >>> log.d_data(data_tree, "par_d", 5.4)  # ignored
+    >>> len(data_tree.keys())  # no data
+    0
+    >>> log.i(msg="Info msg")  # ignored
+    >>> log.w(msg="Warning msg")
+    Warning msg
+    >>> log.e(msg="Error msg")
+    Traceback (most recent call last):
+    RuntimeError: Error msg
+
+    See Also
+    --------
+    :class:`bio_rtd.logger.RtdLogger`
+
     """
 
     def __init__(self,
@@ -310,17 +349,65 @@ class DefaultLogger(RtdLogger):
         super().__init__(log_level, log_data, log_level_data)
 
     def log(self, level: int, msg: str):
-        if level >= self.ERROR:
-            raise RuntimeError(msg)
-        elif level >= self.log_level:
-            print(self._get_parent_uo_id() + msg)
+        """Log messages.
+
+        Prints warnings (and infos)
+        to terminal and raises errors as `RuntimeError`.
+
+        """
+        if level >= self.log_level:
+            if level >= self.ERROR:
+                raise RuntimeError(msg)
+            elif level == self.WARNING:
+                print(f"WARNING: {self._get_parent_log_id()}{msg}")
+            else:
+                print(f"{self._get_parent_log_id()}{msg}")
 
     def _on_data_stored(self, level: int, tree: dict, key: str, value: any):
         pass
 
 
 class DataStoringLogger(RtdLogger):
-    """Prints messages to terminal. Stores all data."""
+    """Prints messages to terminal. Stores all data.
+
+    Parameters
+    ----------
+    log_level
+        Default: WARNING.
+    log_data
+        Default: True.
+    log_level_data
+        Default: DEBUG.
+
+    Examples
+    --------
+    >>> log = DataStoringLogger()
+    >>> data_tree = dict()
+    >>> log.set_data_tree("my_uo", data_tree)
+    >>> log.i_data(data_tree, "par_i", 8.4)  # stored
+    >>> log.d_data(data_tree, "par_d", 5.4)  # stored
+    >>> len(data_tree.keys())  # no data
+    2
+    >>> data_tree["par_i"]
+    8.4
+    >>> data_tree["par_d"]
+    5.4
+    >>> log.i(msg="Info msg")  # ignored
+    >>> log.w(msg="Warning msg")
+    Warning msg
+    >>> log.e(msg="Error msg")
+    Error msg
+    >>> log.log_level = log.INFO
+    >>> log.i_data(data_tree, "par_i_2", 18.4)  # stored and printed
+    Value set: par_i_2: 18.4
+    >>> data_tree["par_i_2"]
+    18.4
+
+    See Also
+    --------
+    :class:`bio_rtd.logger.RtdLogger`
+
+    """
 
     def __init__(self,
                  log_level: int = RtdLogger.WARNING,
@@ -329,8 +416,16 @@ class DataStoringLogger(RtdLogger):
         super().__init__(log_level, log_data, log_level_data)
 
     def log(self, level: int, msg: str):
+        """Prints to terminal everything above `log_level`."""
         if level >= self.log_level:
-            print(self._get_parent_uo_id() + msg)
+            if level == self.ERROR:
+                print(f"ERROR: {self._get_parent_log_id()}{msg}")
+            elif level == self.WARNING:
+                print(f"WARNING: {self._get_parent_log_id()}{msg}")
+            elif level >= self.INFO:
+                print(f"INFO: {self._get_parent_log_id()}{msg}")
+            else:
+                print(f"DEBUG: {self._get_parent_log_id()}{msg}")
 
     def _on_data_stored(self, level: int, tree: dict, key: str, value: any):
         # send to log function if INFO or higher
@@ -339,14 +434,36 @@ class DataStoringLogger(RtdLogger):
 
 
 class StrictLogger(RtdLogger):
-    """Raises RuntimeError on warning and error messages."""
+    """Raises RuntimeError on warning and error messages.
+
+    log_level = WARNING.
+
+    log_data = False.
+
+    Examples
+    --------
+    >>> log = StrictLogger()
+    >>> log.i(msg="Info msg")  # ignored
+    >>> log.w(msg="Warning msg")
+    Traceback (most recent call last):
+    RuntimeError: Warning msg
+    >>> log.e(msg="Error msg")
+    Traceback (most recent call last):
+    RuntimeError: Error msg
+
+    See Also
+    --------
+    :class:`bio_rtd.logger.RtdLogger`
+
+    """
 
     def __init__(self):
         super().__init__(log_level=RtdLogger.WARNING, log_data=False)
 
     def log(self, level: int, msg: str):
+        """Raises RuntimeError if `level` >= WARNING."""
         if level >= RtdLogger.WARNING:
-            raise RuntimeError(self._get_parent_uo_id() + msg)
+            raise RuntimeError(self._get_parent_log_id() + msg)
 
     def _on_data_stored(self, level: int, tree: dict, key: str, value: any):
         pass

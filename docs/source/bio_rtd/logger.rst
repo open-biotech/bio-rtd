@@ -1,5 +1,6 @@
 bio\_rtd.logger
 ===============
+.. automodule:: bio_rtd.logger
 
 DefaultLogger
 -------------
@@ -7,7 +8,6 @@ DefaultLogger
    :members:
    :undoc-members:
    :show-inheritance:
-   :inherited-members:
 
 DataStoringLogger
 -----------------
@@ -15,7 +15,6 @@ DataStoringLogger
    :members:
    :undoc-members:
    :show-inheritance:
-   :inherited-members:
 
 StrictLogger
 -------------
@@ -23,7 +22,6 @@ StrictLogger
    :members:
    :undoc-members:
    :show-inheritance:
-   :inherited-members:
 
 RtdLogger
 ---------

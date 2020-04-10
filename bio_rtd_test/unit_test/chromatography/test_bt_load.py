@@ -8,8 +8,8 @@ from bio_rtd_test.aux_bio_rtd_test import TestLogger
 
 
 class DummyChromatographyLoadBreakthrough(ChromatographyLoadBreakthrough):
-    _possible_key_groups = []
-    _optional_keys = []
+    POSSIBLE_KEY_GROUPS = []
+    OPTIONAL_KEYS = []
 
     def _calc_unbound_to_load_ratio(self, loaded_material: np.ndarray) -> np.ndarray:
         return np.ones_like(loaded_material) * 0.7
@@ -45,16 +45,16 @@ class TestConstantPatternSolution(unittest.TestCase):
         self.btc.set_logger_from_parent("id", TestLogger())
         self.assertEqual(self.btc.k, k)
         self.assertEqual(self.btc.dbc_100, dbc_100)
-        self.assertEqual(self.btc.cv, -1)
+        self.assertEqual(self.btc._cv, -1)
 
     def test_update_btc_parameters(self):
         self.btc_init(120, 0.2)
         cv = 14.5
         with self.assertRaises(KeyError):
             self.btc.update_btc_parameters(cv_not_right=cv)
-        self.assertEqual(self.btc.cv, -1)
+        self.assertEqual(self.btc._cv, -1)
         self.btc.update_btc_parameters(cv=cv)
-        self.assertEqual(self.btc.cv, cv)
+        self.assertEqual(self.btc._cv, cv)
 
     def test_calc_unbound_to_load_ratio(self):
         def run_test(cv, dbc_100, k):
@@ -81,7 +81,7 @@ class TestConstantPatternSolution(unittest.TestCase):
         with self.assertRaises(AssertionError):  # cv is undefined
             self.btc.get_total_bc()
 
-        self.btc.cv = 23.3
+        self.btc._cv = 23.3
 
-        self.assertEqual(self.btc.cv * self.btc.dbc_100,
+        self.assertEqual(self.btc._cv * self.btc.dbc_100,
                          self.btc.get_total_bc())

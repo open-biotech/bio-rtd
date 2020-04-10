@@ -1,6 +1,14 @@
 Features
 ========
 
+Code of `bio-rtd` library is fully covered with tests in `bio_rtd_tests`
+folder. For more info see :ref:`Development`.
+
+Rtd model
+---------
+
+Rtd model is composed of an inlet and a train of unit operations.
+
 Inlet profiles
 --------------
 
@@ -18,7 +26,7 @@ Unit operations are split in following groups:
 - Fully-continuous :mod:`bio_rtd.uo.fc_uo` (accept and provide constant flow rate)
 - Semi-continuous :mod:`bio_rtd.uo.sc_uo` (accept constant and provide periodic flow rate)
 - Surge tank :mod:`bio_rtd.uo.surge_tank` (accept periodic and constant flow rate)
-- Special :mod:`bio_rtd.uo.special_uo` (the ones that do not fit in categories above)
+- Special :mod:`bio_rtd.uo.special_uo` (the ones that do not fit in any of the above categories)
 
 
 All unit operations can be instructed to discard parts of inlet or outlet process fluid stream
@@ -96,7 +104,7 @@ Available pdf peak shapes:
 
 - Gaussian: :func:`bio_rtd.peak_shape.gaussian`
 - Exponentially modified Gaussian: :func:`bio_rtd.peak_shape.emg`
-- Skewed normal: :func:`bio_rtd.peak_shape.skew_normal`
+- Skewed normal: :func:`bio_rtd.peak_shape.skewed_normal`
 - N tanks in series (N = 1 for exponential decay): :func:`bio_rtd.peak_shape.tanks_in_series`
 
 Available PDF classes (wrappers around pdf peak shapes):

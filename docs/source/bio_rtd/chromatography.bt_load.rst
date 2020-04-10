@@ -1,5 +1,6 @@
 bio\_rtd.chromatography.bt\_load
 ================================
+.. automodule:: bio_rtd.chromatography.bt_load
 
 ConstantPatternSolution
 -----------------------

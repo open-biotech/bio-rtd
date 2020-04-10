@@ -1,5 +1,5 @@
-Welcome to bio\_rtd documentation!
-==================================
+Welcome to bio-rtd documentation!
+=================================
 
 ..
     Sections
@@ -25,7 +25,7 @@ Welcome to bio\_rtd documentation!
 About
 -----
 
-`bio_rtd <https://github.com/open-biotech/bio-rtd.git>`_ library is a python library for modeling
+`bio-rtd <https://github.com/open-biotech/bio-rtd.git>`_ library is a python library for modeling
 residence time distributions (RTD)
 of integrated continuous biomanufacturing processes.
 

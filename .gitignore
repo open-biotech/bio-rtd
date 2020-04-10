@@ -15,3 +15,4 @@ htmlcov/
 !/.gitignore
 docs/build
 !/docs/source/_templates/breadcrumbs.html
+!/.readthedocs.yml

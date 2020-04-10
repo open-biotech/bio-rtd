@@ -1,5 +1,6 @@
 bio\_rtd.core
 =============
+.. automodule:: bio_rtd.core
 
 Inlet
 -----
