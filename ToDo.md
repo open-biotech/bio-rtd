@@ -6,11 +6,6 @@ List of things to do.
 
 None.
 
-#### New UO
-* [be4 release] Alternating surge tank system.
-#### Other
-* [be4 release] Clean up todo tags.
-
 ## Maintenance
 
 #### Sample Cases
