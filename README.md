@@ -55,6 +55,8 @@ or
 
 For more information see the [Documentation](https://open-biotech.github.io/bio-rtd-docs/).
 
+For theoretical backgorund see our scientific publication: https://doi.org/10.1002/biot.202000008.
+
 ## Documentation
 
 The documentation can be accessed at https://open-biotech.github.io/bio-rtd-docs/ or by building a local version.
@@ -93,7 +95,11 @@ University of Natural Resources and Life Sciences (BOKU), Vienna
 ## Referencing the library
 
  If you are using this package for a scientific publication,
- please add the following reference:
+ please add the following references:
+
+* Sencar, J., Hammerschmidt, N., & Jungbauer, A. (2020).
+Modeling the Residence Time Distribution of Integrated Continuous Bioprocesses.
+Biotechnology Journal, 2000008. https://doi.org/10.1002/biot.202000008
 
 * Senčar, J., (2020) GitHub Repository,
    https://github.com/open-biotech/bio-rtd.
