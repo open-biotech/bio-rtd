@@ -4,7 +4,7 @@ residence time distributions (RTD)
 of integrated continuous biomanufacturing processes.
 
 ## Version
-Current version: 0.7.2
+Current version: 0.7.3
 
 ## Requirements
 
