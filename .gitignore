@@ -1,5 +1,8 @@
 .idea/
 __pycache__/
+dist/
+bio_rtd.egg-info/
+build/
 *.pyc
 *.iml
 *.html
@@ -12,7 +15,7 @@ htmlcov/
 *.png
 *.js
 .*
-!/.gitignore
+!.gitignore
 docs/build
 !/docs/source/_templates/breadcrumbs.html
-!/.readthedocs.yml
+!.readthedocs.yml

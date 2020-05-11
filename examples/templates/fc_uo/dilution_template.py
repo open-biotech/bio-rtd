@@ -79,7 +79,7 @@ uo_pars = {
     # Required.
     "uo_id": "dilution_1",
     # Required.
-    # 1 = no dilution, 1.6 = 20 % addition of dilution buffer.
+    # 1 = no dilution, 1.6 = 60 % addition of dilution buffer.
     "dilution_ratio": 1.6,
 
     # Optional.

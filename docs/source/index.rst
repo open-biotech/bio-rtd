@@ -61,6 +61,10 @@ E-mail: `jure.sencar@boku.ac.at <mailto:jure.sencar@boku.ac.at>`_.
 Referencing the library
 -----------------------
 
+* Sencar, J., Hammerschmidt, N., Jungbauer, A.,
+  Modeling the Residence Time Distribution of Integrated Continuous
+  Bioprocesses. Biotechnol. J. 2020, 2000008.
+  https://doi.org/10.1002/biot.202000008
 * Senčar, J., (2020) GitHub Repository, https://github.com/open-biotech/bio-rtd.
 
 Acknowledgements
@@ -78,30 +82,3 @@ This work was supported by:
   by the Austrian Research Promotion Agency FFG
 - Baxalta Innovations GmbH (now part of Takeda)
 - Bilfinger Industrietechnik Salzburg GmbH
-
-
-
-.. toctree::
-   :hidden:
-
-   Home <self>
-
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-   :titlesonly:
-
-   getting_started
-   user_guide
-   examples
-
-.. toctree::
-   :hidden:
-   :maxdepth: 3
-
-   api_reference
-
-
-
-
-

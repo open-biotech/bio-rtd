@@ -41,6 +41,7 @@ Dependencies (``pip`` packages):
    sphinx
    sphinx_autodoc_typehints
    sphinx_rtd_theme
+   rst2pdf
 
 To generate the documentation from script, run:
 
@@ -49,6 +50,19 @@ To generate the documentation from script, run:
    make html
 
 and open ``docs/build/html/index.html``.
+
+To generate the documentation in form of PDF, run:
+
+.. code-block:: bash
+
+    sphinx-build -b pdf docs/source docs/build
+
+To clean the build directory, run:
+
+.. code-block:: bash
+
+    make clean
+
 
 
 Pull requests
@@ -60,8 +74,8 @@ To contribute to the library, please `create a pull request <https://help.github
 
 Checklist before making a pull request:
 
-* all unit tests need to succeed
-* ensure 100 % code coverage with unit tests
-* update docstrings and documentation
+* All unit tests need to succeed.
+* Ensure 100 % code coverage with unit tests.
+* Update docstrings and documentation.
 
 
