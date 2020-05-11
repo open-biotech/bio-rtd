@@ -60,7 +60,7 @@ ATTRIBUTES = {
     # Optional. One of the following two. It determines initial fill volume.
     # If none are defined, the initial fill volume is the same as void volume.
     "v_init": float,
-    "v_ratio": float,  # 20 % of the total (== void) volume
+    "v_init_ratio": float,  # 20 % of the total (== void) volume
 
     # Optional. Default = False.
     # If True, then `v_init` and `v_init_ratio` are ignored.
@@ -68,7 +68,7 @@ ATTRIBUTES = {
 
     # Optional. Initial buffer composition.
     # Default is empty array (equivalent to 0).
-    "c_add_buffer": np.ndarray,
+    "c_init": np.ndarray,
 
     # Additional attributes are inherited from `UnitOperation`.
     # See `examples/templates/add_on_attributes.py`.
@@ -108,7 +108,7 @@ uo_attr = {
     # Optional. One of the following two. It determines initial fill volume.
     # If none are defined, the initial fill volume is the same as void volume.
     # "v_init": float,
-    # "v_ratio": float,  # 20 % of the total (== void) volume
+    # "v_init_ratio": float,  # 20 % of the total (== void) volume
 
     # Optional. Default = False.
     # If True, then `v_init` and `v_init_ratio` are ignored.
@@ -116,7 +116,7 @@ uo_attr = {
 
     # Optional. Initial buffer composition.
     # Default is empty array (equivalent to 0).
-    # "c_add_buffer": np.ndarray,
+    # "c_init": np.ndarray,
 
     # Additional attributes are inherited from `UnitOperation`.
     # See `examples/templates/add_on_attributes.py`.

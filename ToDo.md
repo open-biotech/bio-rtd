@@ -9,6 +9,8 @@ None.
 ## Maintenance
 
 #### Sample Cases
+
+* Rewrite direct instance as a function of `_t`.
 * Process optimization example.
 
 #### Testing

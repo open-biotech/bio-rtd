@@ -79,6 +79,11 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx_autodoc_typehints',
     'bokeh.sphinxext.bokeh_plot',
+    'rst2pdf.pdfbuilder',
+]
+
+pdf_documents = [
+    ('content', u'bio-rtd-docs', u'Bio-Rtd Docs', u'Jure Sencar'),
 ]
 
 napoleon_numpy_docstring = True
@@ -105,6 +110,9 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 pygments_style = 'sphinx'
+
+master_doc = 'content'
+
 
 html_theme = 'sphinx_rtd_theme'
 html_show_sourcelink = False
