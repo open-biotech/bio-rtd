@@ -55,8 +55,7 @@ or
 
 For more information see the [Documentation](https://open-biotech.github.io/bio-rtd-docs/).
 
-For theoretical background see our scientific publication: https://doi.org
-/10.1002/biot.202000008.
+For theoretical background see our scientific publication: https://doi.org/10.1002/biot.202000008.
 
 ## Documentation
 
