@@ -71,10 +71,11 @@ run command:
 
 and open `docs/build/html/index.html` with a web browser.
 
-
-## Meta information
+## License
 
 Distributed under the MIT license. See ``LICENSE`` for more information.
+
+## Meta information
 
 For technical issues, bug reports and feature request use
 [issue tracker](https://github.com/open-biotech/bio-rtd/issues).
@@ -83,14 +84,11 @@ If you want to contribute to the code, see
 [Developers guide](https://open-biotech.github.io/bio-rtd-docs/user_guide/development.html).
 
 If you are using the library in your projects please let 
-[us know](mailto:jure.sencar@boku.ac.at).
+[us know](mailto:jure.biotech@timetools.eu).
 This way we know how much interest there is, what is the scope of usage,
 the needs, etc. This information influences the future development of the project.
 
-
-E-mail: [jure.sencar@boku.ac.at](mailto:jure.sencar@boku.ac.at)
-
-University of Natural Resources and Life Sciences (BOKU), Vienna
+E-mail: [jure.biotech@timetools.eu](mailto:jure.biotech@timetools.eu)
 
 ## Referencing the library
 
@@ -119,3 +117,4 @@ This work was supported by:
   by the Austrian Research Promotion Agency FFG
 - Baxalta Innovations GmbH (now part of Takeda)
 - Bilfinger Industrietechnik Salzburg GmbH
+- University of Natural Resources and Life Sciences (BOKU), Vienna
