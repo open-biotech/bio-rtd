@@ -63,10 +63,10 @@ InstanceAttributeDocumenter.add_directive_header = i_add_directive_header
 # Project information.
 project = 'bio_rtd'
 # noinspection PyShadowingBuiltins
-copyright = '2020, University of Natural Resources and Life Sciences (BOKU),' \
-            ' Vienna'
+copyright = '2020 - BOKU Vienna; 2021 - Jure Sencar'
+
 author = 'Jure Sencar'
-version = '0.7.1'
+version = '0.7.3'
 
 # General configuration.
 extensions = [

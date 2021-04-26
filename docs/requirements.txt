@@ -6,3 +6,5 @@ numpy>=1.18.2
 bokeh>=2.0.0
 xlrd>=1.2.0
 pandas>=1.0.3
+openpyxl>=3.0.7
+rst2pdf>=0.97

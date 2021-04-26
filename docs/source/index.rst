@@ -51,11 +51,11 @@ on
 `Github <https://github.com/open-biotech/bio-rtd>`_.
 
 If you are using the library in your projects please let
-`us know <mailto:jure.sencar@boku.ac.at>`_.
+`us know <mailto:jure.biotech@timetools.eu>`_.
 This way we know how much interest there is, what is the scope of usage,
 the needs, etc. This information influences the future development of the project.
 
-E-mail: `jure.sencar@boku.ac.at <mailto:jure.sencar@boku.ac.at>`_.
+E-mail: `jure.biotech@timetools.eu <mailto:jure.biotech@timetools.eu>`_
 
 
 Referencing the library
@@ -82,3 +82,4 @@ This work was supported by:
   by the Austrian Research Promotion Agency FFG
 - Baxalta Innovations GmbH (now part of Takeda)
 - Bilfinger Industrietechnik Salzburg GmbH
+- University of Natural Resources and Life Sciences (BOKU), Vienna

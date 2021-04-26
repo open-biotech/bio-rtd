@@ -25,6 +25,18 @@ environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/man
 Setup
 -----
 
+**Just the library**
+
+Install via ``pip`` package manager:
+
+.. code-block:: bash
+
+   pip install bio_rtd
+
+----
+
+**Source code with the examples**
+
 Clone git repo:
 
 .. code-block:: bash
@@ -42,6 +54,8 @@ Install requirements:
 .. code-block:: bash
 
    pip install -r requirements.txt
+
+----
 
 Running first example
 ---------------------
